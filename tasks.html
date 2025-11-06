@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TaskWise — All Tasks</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/cards.css') }}">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    /* small overrides for the tasks list */
+    .tasks-page { padding: 28px; max-width: 1100px; margin: 0 auto; }
+    .tasks-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px }
+    .tasks-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:18px }
+    .no-tasks { color:#666 }
+    .priority-high .task-priority { background:#ff7b7b }
+    .priority-medium .task-priority { background:#f6c84c }
+    .priority-low .task-priority { background:#90cdf4 }
+  </style>
+</head>
+<body>
+  <div class="tasks-page">
+    <div class="tasks-header">
+      <div>
+        <h1>All Tasks</h1>
+        <p class="muted">A live list of all tasks from the API</p>
+      </div>
+      <div>
+        <a href="/" class="btn secondary" style="margin-right:8px"><i class="fas fa-arrow-left"></i> Dashboard</a>
+        <button id="refresh-btn" class="btn primary"><i class="fas fa-sync-alt"></i> Refresh</button>
+      </div>
+    </div>
+
+    <div id="tasks-container">
+      <p class="no-tasks">Loading tasks...</p>
+    </div>
+  </div>
+
+  <script>
+    function formatDate(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      return d.toLocaleDateString();
+    }
+
+    function createTaskCard(t) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'task-card ' + (t.priority === 'high' ? 'priority-high' : (t.priority === 'low' ? 'priority-low' : 'priority-medium'));
+
+      // header
+      const header = document.createElement('div');
+      header.className = 'task-header';
+
+      const priority = document.createElement('div');
+      priority.className = 'task-priority';
+      priority.innerHTML = '<i class="fas fa-flag"></i>';
+
+      const actions = document.createElement('div');
+      actions.className = 'task-actions';
+      actions.innerHTML = '<i class="far fa-star"></i> <i class="fas fa-ellipsis-h"></i>';
+
+      header.appendChild(priority);
+      header.appendChild(actions);
+
+      // content
+      const content = document.createElement('div');
+      content.className = 'task-content';
+      const title = document.createElement('h3');
+      title.textContent = t.title || 'Untitled';
+      const desc = document.createElement('p');
+      desc.textContent = t.description || '';
+
+      // meta
+      const meta = document.createElement('div');
+      meta.className = 'task-meta';
+      const proj = document.createElement('div');
+      proj.className = 'task-project';
+      proj.innerHTML = '<i class="fas fa-folder"></i> <span>' + (t.project_name || 'No project') + '</span>';
+      const due = document.createElement('div');
+      due.className = 'task-due';
+      due.innerHTML = '<i class="fas fa-calendar"></i> <span>' + (formatDate(t.due_date) || 'No due date') + '</span>';
+      meta.appendChild(proj);
+      meta.appendChild(due);
+
+      // progress
+      const progWrap = document.createElement('div');
+      progWrap.className = 'task-progress';
+      const progressBar = document.createElement('div');
+      progressBar.className = 'progress-bar';
+      const fill = document.createElement('div');
+      fill.className = 'progress-fill';
+      fill.style.width = (t.progress || 0) + '%';
+      progressBar.appendChild(fill);
+      const progText = document.createElement('span');
+      progText.textContent = (t.progress || 0) + '%';
+      progWrap.appendChild(progressBar);
+      progWrap.appendChild(progText);
+
+      content.appendChild(title);
+      content.appendChild(desc);
+      content.appendChild(meta);
+      content.appendChild(progWrap);
+
+      wrapper.appendChild(header);
+      wrapper.appendChild(content);
+
+      // click behavior
+      wrapper.addEventListener('click', () => {
+        // simple highlight animation
+        wrapper.style.transform = 'translateY(-3px)';
+        setTimeout(() => wrapper.style.transform = '', 180);
+      });
+
+      return wrapper;
+    }
+
+    async function loadTasks() {
+      const container = document.getElementById('tasks-container');
+      container.innerHTML = '<p class="no-tasks">Loading tasks...</p>';
+      try {
+        const res = await fetch('/api/tasks');
+        const data = await res.json();
+        if (!data.success) {
+          container.innerHTML = '<p class="no-tasks">Failed to load tasks: ' + (data.error || 'unknown') + '</p>';
+          return;
+        }
+        const tasks = data.tasks || [];
+        if (tasks.length === 0) {
+          container.innerHTML = '<p class="no-tasks">No tasks found.</p>';
+          return;
+        }
+        const grid = document.createElement('div');
+        grid.className = 'tasks-grid';
+        tasks.forEach(t => grid.appendChild(createTaskCard(t)));
+        container.innerHTML = '';
+        container.appendChild(grid);
+      } catch (err) {
+        container.innerHTML = '<p class="no-tasks">Error loading tasks: ' + err.message + '</p>';
+      }
+    }
+
+    document.getElementById('refresh-btn').addEventListener('click', loadTasks);
+    loadTasks();
+  </script>
+</body>
+</html>

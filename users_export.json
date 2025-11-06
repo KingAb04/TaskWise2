@@ -1,0 +1,8 @@
+[
+  {
+    "username": "demo",
+    "email": "demo@example.com",
+    "password_hash": "scrypt:32768:8:1$H5swuJZ2fgNBnRAi$a756c33e51edfdb0afae8f47e31082c29313db15515c924f24ff07a6dbb14e97c170036d52c1ce80ecc146eb4f997baad061607ed2782c753baab0b854ab82b4",
+    "created_at": "2025-11-06T19:09:39.120802"
+  }
+]

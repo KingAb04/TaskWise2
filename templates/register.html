@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create Account - TaskWise</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="auth-split">
+    <!-- Left: Hero -->
+    <aside class="auth-side hero-side">
+      <a class="top-cta" href="{{ url_for('login') }}">Log In</a>
+      <div class="hero-copy">
+        <h2>Take your productivity to the next level.</h2>
+      </div>
+    </aside>
+
+    <!-- Right: Form -->
+    <section class="auth-side form-side">
+      <header class="brand-row">
+        <div class="brand">
+          <img src="{{ url_for('static', filename='assets/taskwise-logo-1.png') }}" alt="TaskWise" />
+          <h1>TaskWise</h1>
+        </div>
+      </header>
+
+      <div class="form-wrap">
+        <h2 class="page-title">Create an Account</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flashes">
+              {% for category, msg in messages %}
+                <div class="flash {{ category }}">{{ msg }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <form method="post" action="{{ url_for('register') }}" class="auth-form modern">
+          <label for="username">Fullname</label>
+          <input id="username" name="username" required placeholder="Your name">
+
+          <label for="email">Email Address</label>
+          <input id="email" name="email" type="email" required placeholder="you@example.com">
+
+          <label for="password">Enter A Password</label>
+          <div class="input-with-icon">
+            <input id="password" name="password" type="password" required placeholder="Create a password">
+            <button type="button" class="icon-btn" aria-label="Toggle password visibility" onclick="togglePw('password', this)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 5C7 5 2.73 8.11 1 12c1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7Z" stroke="currentColor" stroke-width="1.5"/>
+                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
+              </svg>
+            </button>
+          </div>
+
+          <button type="submit" class="btn primary block">Create Account</button>
+        </form>
+
+        <p class="switch-link">Already have an account? <a href="{{ url_for('login') }}">Log In</a></p>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    function togglePw(id, btn){
+      const input = document.getElementById(id);
+      const isPw = input.type === 'password';
+      input.type = isPw ? 'text' : 'password';
+      btn.classList.toggle('active', !isPw);
+    }
+  </script>
+</body>
+</html>

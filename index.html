@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskWise - Smart Task Management Dashboard</title>
+  <link rel="stylesheet" href="static/css/dashboard.css" />
+  <link rel="stylesheet" href="static/css/cards.css" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <!-- Sidebar Navigation -->
+  <div class="sidebar">
+    <div class="logo">
+      <img src="assets/taskwise-logo-1.png" alt="TaskWise Logo" />
+    </div>
+    <div class="divider"></div>
+
+    <nav class="nav-items">
+      <div class="nav-item active">
+        <i class="fas fa-chart-pie nav-icon"></i>
+        <span>Dashboard</span>
+      </div>
+
+      <div class="nav-item" onclick="toggleProjects()">
+        <i class="fas fa-folder nav-icon"></i>
+        <span>Projects</span>
+        <i class="fas fa-chevron-down nav-arrow"></i>
+      </div>
+
+      <div class="collapsible" id="projects">
+        <div class="nav-item sub-item"><i class="fas fa-plus nav-icon"></i><span>Add New Project</span></div>
+        <div class="nav-item sub-item"><i class="fas fa-briefcase nav-icon"></i><span>Work Projects</span></div>
+        <div class="nav-item sub-item"><i class="fas fa-home nav-icon"></i><span>Personal</span></div>
+      </div>
+
+      <div class="nav-item"><i class="fas fa-tasks nav-icon"></i><span>All Tasks</span></div>
+
+      <!-- ✅ Pomodoro Timer now opens focus.html -->
+      <div class="nav-item" onclick="window.location.href='focus.html'">
+        <i class="fas fa-clock nav-icon"></i>
+        <span>Pomodoro Timer</span>
+      </div>
+
+      <div class="nav-item"><i class="fas fa-chart-bar nav-icon"></i><span>Analytics</span></div>
+      <div class="nav-item" onclick="window.location.href='calendar.html'">
+        <i class="fas fa-calendar nav-icon"></i>
+        <span>Calendar</span>
+      </div>
+    </nav>
+
+    <div class="profile">
+      <div class="profile-avatar"><i class="fas fa-user-circle"></i></div>
+      <div class="profile-info">
+        <h4>John Doe</h4>
+        <p>john.doe@taskwise.com</p>
+      </div>
+      <div class="profile-settings"><i class="fas fa-cog"></i></div>
+    </div>
+  </div>
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <h2>Welcome back, John! 👋</h2>
+      <p>Here's what's happening with your tasks today</p>
+    </div>
+    <div class="topbar-right">
+      <div class="search-container">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" class="global-search" placeholder="Search tasks, projects..." />
+      </div>
+      <div class="notification-bell">
+        <i class="fas fa-bell"></i>
+        <span class="notification-badge">3</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content (unchanged) -->
+  <div class="content">
+    <!-- Your existing dashboard content here -->
+    <!-- ... (everything you already had stays the same) ... -->
+  </div>
+
+  <script>
+    function toggleProjects() {
+      const projects = document.getElementById("projects");
+      const arrow = document.querySelector(".nav-arrow");
+      if (projects.style.display === "block") {
+        projects.style.display = "none";
+        arrow.style.transform = "rotate(0deg)";
+      } else {
+        projects.style.display = "block";
+        arrow.style.transform = "rotate(180deg)";
+      }
+    }
+
+    function openTaskModal() {
+      alert("New Task Modal would open here!");
+    }
+
+    // Tab switching functionality
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", function() {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        this.classList.add("active");
+      });
+    });
+
+    // Add some interactivity to task cards
+    document.querySelectorAll(".task-card:not(.add-task)").forEach(card => {
+      card.addEventListener("click", function() {
+        this.style.transform = "translateY(-2px)";
+        setTimeout(() => (this.style.transform = "translateY(0)"), 200);
+      });
+    });
+  </script>
+</body>
+</html>

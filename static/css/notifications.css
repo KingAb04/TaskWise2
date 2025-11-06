@@ -1,0 +1,16 @@
+/* Notifications dropdown styles */
+.notifications-dropdown{position:absolute;right:0;top:36px;width:320px;background:rgba(255,255,255,0.03);border-radius:8px;padding:8px;border:1px solid rgba(255,255,255,0.04);display:none;z-index:60;box-shadow:0 10px 30px rgba(2,6,23,0.6)}
+.notifications-header{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.02)}
+.notifications-list{max-height:300px;overflow:auto}
+.notif-item{padding:10px;border-bottom:1px solid rgba(255,255,255,0.02)}
+.notif-item.unread{background:linear-gradient(90deg, rgba(102,126,234,0.06), rgba(102,126,234,0.02))}
+.notif-title{font-weight:600}
+.notif-message{font-size:0.9rem;color:rgba(255,255,255,0.8);margin-top:4px}
+.notif-actions{margin-top:8px;text-align:right}
+.notif-empty{padding:18px;text-align:center;color:rgba(255,255,255,0.6)}
+.notification-bell{position:relative;cursor:pointer;margin-left:12px}
+.notification-badge{position:absolute;top:-6px;right:-6px;background:#ef4444;color:white;border-radius:50%;padding:2px 6px;font-size:0.75rem}
+.profile-settings{position:relative}
+.profile-menu{position:absolute;right:0;top:38px;background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);display:none}
+.profile-menu .profile-logout{display:block;color:#fff;text-decoration:none;padding:6px 8px}
+.profile-settings:hover .profile-menu{display:block}

@@ -1,0 +1,87 @@
+body {
+    background-color: #eee; /* Background color for the body */
+}
+
+.card-section {
+    padding: 20px; /* Padding around the card section */
+}
+
+.main {
+    display: flex; /* Use flexbox for horizontal layout */
+    justify-content: center; /* Center content horizontally */
+    flex-wrap: wrap; /* Allow wrapping to the next line on smaller screens */
+}
+
+.row {
+    display: flex; /* Use flexbox for horizontal layout */
+    flex-wrap: wrap; /* Allow cards to wrap to the next line */
+    justify-content: space-between; /* Space between cards */
+    width: 100%; /* Full width */
+}
+
+.col-md-4 {
+    flex: 1 1 30%; /* Flex-grow, flex-shrink, and flex-basis */
+    margin: 10px; /* Margin around each card */
+    min-width: 250px; /* Minimum width for cards */
+}
+
+.one, .two {
+    background-color: #fff; /* Background color for cards */
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow for depth */
+    padding: 20px; /* Padding inside the card */
+    display: flex; /* Enable flexbox inside cards */
+    flex-direction: column; /* Stack elements vertically */
+}
+
+.project {
+    font-size: 22px; /* Font size for project title */
+    font-weight: 600; /* Bold text */
+    color: #fd4040; /* Color for project title */
+    text-align: center; /* Center text */
+}
+
+.quote {
+    font-size: 12px; /* Font size for the quote */
+    color: #666; /* Color for the quote */
+    text-align: center; /* Center text */
+}
+
+.name {
+    font-size: 22px; /* Font size for task name */
+    color: #464e56; /* Color for task name */
+    font-weight: 600; /* Bold text */
+}
+
+.quote2 {
+    font-size: 12px; /* Font size for the task description */
+    color: #868e94; /* Color for the task description */
+}
+
+.d-flex {
+    display: flex; /* Flexbox for alignment */
+    align-items: center; /* Center items vertically */
+}
+
+.img1, .img2, .img3 {
+    border: 0.5px solid #6ebde4; /* Border for images */
+    border-radius: 50%; /* Rounded images */
+    background-color: #bcd8e6; /* Background color for images */
+}
+
+.round {
+    border-radius: 50%; /* Circular shape */
+    background-color: #eee; /* Background color */
+    width: 33px; /* Width of the round element */
+    height: 33px; /* Height of the round element */
+    display: flex; /* Flexbox for centering */
+    align-items: center; /* Center items vertically */
+    justify-content: center; /* Center items horizontally */
+}
+
+/* Responsive behavior */
+@media (max-width: 768px) {
+    .col-md-4 {
+        flex: 1 1 100%; /* Stack cards vertically on small screens */
+    }
+}
