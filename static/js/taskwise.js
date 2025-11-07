@@ -439,9 +439,10 @@ class TaskWise {
                 </div>
             `;
             projectItem.addEventListener('click', (e) => {
-                // If clicking action buttons, don't trigger project filter
+                // If clicking action buttons, don't trigger navigation
                 if (e.target.closest('.project-actions')) return;
-                this.filterByProject(project.id);
+                // Navigate to project detail page
+                window.location.href = `/projects/${project.id}`;
             });
             // Edit handler
             projectItem.querySelector('.project-edit').addEventListener('click', (e) => {
@@ -528,9 +529,12 @@ class TaskWise {
             modal.className = 'modal-overlay';
             modal.style.cssText = 'position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; background: rgba(0,0,0,0.5) !important; display: flex !important; align-items: center !important; justify-content: center !important; z-index: 10000 !important; backdrop-filter: blur(4px) !important; padding: 20px !important;';
             
+            // Use defaultProjectId if set and this is a new task
+            const defaultProjId = (!isEdit && this.defaultProjectId) ? this.defaultProjectId : task?.project_id;
+            
             const projectOptions = this.projects.map(p => {
                 const name = this.escapeHtml(p.name || 'Unnamed Project');
-                const selected = task?.project_id === p.id ? 'selected' : '';
+                const selected = defaultProjId === p.id ? 'selected' : '';
                 return `<option value="${p.id}" ${selected}>${name}</option>`;
             }).join('');
             
@@ -681,6 +685,10 @@ class TaskWise {
             console.log('Appending modal to body...');
             document.body.appendChild(modal);
             console.log('Modal appended successfully');
+            
+            // Store defaultProjectId for form submission, but don't delete it yet
+            const savedDefaultProjectId = this.defaultProjectId;
+            
             console.log('=== showTaskModal END ===');
 
             // Event listeners
@@ -757,6 +765,13 @@ class TaskWise {
                 Object.keys(taskData).forEach(key => {
                     if (taskData[key] === '') taskData[key] = null;
                 });
+                
+                // Ensure project_id is preserved if defaultProjectId was set
+                if (!taskData.project_id && savedDefaultProjectId) {
+                    taskData.project_id = savedDefaultProjectId;
+                }
+                
+                console.log('Task data being submitted:', taskData);
 
                 // Validate required fields (extra guard)
                 if (!taskData.title) { alert('Title is required'); return; }
@@ -1043,6 +1058,10 @@ class TaskWise {
 
     closeModal(modal) {
         modal.remove();
+        // Clear defaultProjectId when modal closes
+        if (this.defaultProjectId) {
+            delete this.defaultProjectId;
+        }
     }
 
     // Utility Methods

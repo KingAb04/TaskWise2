@@ -59,7 +59,25 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // Add task button handler
   document.getElementById('addTaskBtn').addEventListener('click', () => {
-    window.location.href = `/tasks?project=${projectId}`;
+    // Use taskwise modal if available
+    if (window.taskWise && window.taskWise.showTaskModal) {
+      // Store the default project ID
+      window.taskWise.defaultProjectId = projectId;
+      
+      // Store original createTask to intercept success
+      const originalCreateTask = window.taskWise.createTask.bind(window.taskWise);
+      window.taskWise.createTask = async function(taskData) {
+        const result = await originalCreateTask(taskData);
+        // Reload the page to show the new task
+        window.location.reload();
+        return result;
+      };
+      
+      window.taskWise.showTaskModal();
+    } else {
+      // Fallback: redirect to tasks page with project filter
+      window.location.href = `/tasks?project=${projectId}`;
+    }
   });
 });
 
