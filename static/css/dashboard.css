@@ -146,6 +146,8 @@ body {
     color: var(--text-gray);
     transition: all 0.2s;
     position: relative;
+    z-index: 10;
+    pointer-events: auto;
 }
 
 .icon-btn:hover, .notification-bell:hover {
