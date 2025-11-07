@@ -574,19 +574,22 @@ body {
 }
 
 .task-priority {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    font-size: 0.8rem;
+    color: inherit; /* icon color will be set per-priority */
+    font-size: 0.85rem;
+    background: rgba(255,255,255,0.85); /* keep badge neutral so card bg is visible */
+    border: 2px solid transparent;
 }
 
-.task-priority.high { background: #ff4757; }
-.task-priority.medium { background: #ffa502; }
-.task-priority.low { background: #7bed9f; }
+/* Priority badge uses a colored outline and colored icon, not a filled block */
+.task-priority.high { border-color: #ff4757; color: #ff4757; }
+.task-priority.medium { border-color: #ffa502; color: #ffa502; }
+.task-priority.low { border-color: #16a34a; color: #16a34a; }
 
 .task-actions {
     display: flex;

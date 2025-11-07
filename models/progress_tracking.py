@@ -33,6 +33,14 @@ class Subtask(db.Model):
     completed_at = db.Column(db.DateTime)
     order = db.Column(db.Integer, default=0)  # For ordering subtasks
     
+    def toggle_completed(self):
+        """Toggle the completion status of this subtask"""
+        self.completed = not self.completed
+        if self.completed:
+            self.completed_at = datetime.utcnow()
+        else:
+            self.completed_at = None
+    
     def to_dict(self):
         return {
             'id': self.id,

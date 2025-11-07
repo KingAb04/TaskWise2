@@ -1,6 +1,7 @@
 // Task management functionality
 let tasks = [];
 let projects = [];
+let isSubmitting = false; // prevent duplicate form submissions
 
 // DOM Elements
 const tasksList = document.getElementById('tasksList');
@@ -27,6 +28,28 @@ function setupEventListeners() {
     taskSearch.addEventListener('input', filterTasks);
     statusFilter.addEventListener('change', filterTasks);
     priorityFilter.addEventListener('change', filterTasks);
+    // Subtasks helpers (delegated)
+    document.addEventListener('click', (e) => {
+        if (e.target && e.target.matches('.subtask-remove')) {
+            const row = e.target.closest('.subtask-row');
+            if (row) row.remove();
+        }
+    });
+}
+
+// Utility to darken/brighten hex colors by percent (-100..100)
+function adjustHexBrightness(hex, percent) {
+    if (!hex) return hex;
+    hex = hex.replace('#','');
+    if (hex.length === 3) hex = hex.split('').map(c => c+c).join('');
+    const num = parseInt(hex,16);
+    let r = (num >> 16) + Math.round(255 * (percent/100));
+    let g = ((num >> 8) & 0x00FF) + Math.round(255 * (percent/100));
+    let b = (num & 0x0000FF) + Math.round(255 * (percent/100));
+    r = Math.max(0, Math.min(255, r));
+    g = Math.max(0, Math.min(255, g));
+    b = Math.max(0, Math.min(255, b));
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
 // Task CRUD Operations
@@ -45,7 +68,6 @@ async function loadTasks() {
         showErrorMessage('Failed to load tasks');
     }
 }
-
 async function loadProjects() {
     try {
         const response = await fetch('/api/projects');
@@ -113,6 +135,13 @@ function createTaskElement(task) {
                     <div class="task-meta-item">
                         <i class="fas fa-folder"></i>
                         <span>${task.project.name}</span>
+                // re-enable submissions
+                isSubmitting = false;
+                try {
+                    const submitBtn = document.querySelector('#taskForm button[type="submit"]');
+                    if (submitBtn) submitBtn.disabled = false;
+                } catch (e) {}
+        
                     </div>
                 ` : ''}
                 <div class="task-meta-item">
@@ -143,19 +172,83 @@ function createTaskElement(task) {
                     <span class="progress-percentage">${task.progress}%</span>
                 </div>
             ` : ''}
+            ${task.subtasks && task.subtasks.length > 0 ? `
+                <div class="subtasks-list">
+                    <div class="subtasks-header">
+                        <i class="fas fa-list-check"></i>
+                        <span>Subtasks (${task.subtasks.filter(s => s.completed).length}/${task.subtasks.length})</span>
+                    </div>
+                    ${task.subtasks.map(subtask => `
+                        <div class="subtask-item" data-subtask-id="${subtask.id}">
+                            <label class="subtask-checkbox-label">
+                                <input type="checkbox" 
+                                       class="subtask-checkbox" 
+                                       data-subtask-id="${subtask.id}"
+                                       ${subtask.completed ? 'checked' : ''}
+                                       onchange="toggleSubtask(${subtask.id})">
+                                <span class="subtask-title ${subtask.completed ? 'completed' : ''}">${subtask.title}</span>
+                            </label>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
         </div>
         <div class="task-actions">
-            <button class="task-action-btn" onclick="editTask(${task.id})" title="Edit">
+            <button class="task-action-btn edit-btn" data-id="${task.id}" title="Edit">
                 <i class="fas fa-edit"></i>
             </button>
-            <button class="task-action-btn" onclick="toggleTaskStatus(${task.id})" title="${task.status === 'COMPLETED' ? 'Mark as incomplete' : 'Mark as complete'}">
+            <button class="task-action-btn toggle-status-btn" data-id="${task.id}" title="${task.status === 'COMPLETED' ? 'Mark as incomplete' : 'Mark as complete'}">
                 <i class="fas fa-${task.status === 'COMPLETED' ? 'undo' : 'check'}"></i>
             </button>
-            <button class="task-action-btn" onclick="deleteTask(${task.id})" title="Delete">
+            <button class="task-action-btn delete-btn" data-id="${task.id}" title="Delete">
                 <i class="fas fa-trash"></i>
             </button>
         </div>
     `;
+    // Apply card color if provided (from color picker)
+    const cardColor = task.card_color || task.cardColor || task.cardColorInput || null;
+    if (cardColor) {
+        try {
+            taskDiv.style.backgroundColor = cardColor;
+            // set a slightly darker left border so it matches dashboard style
+            const borderColor = adjustHexBrightness(cardColor, -15);
+            taskDiv.style.borderLeft = '6px solid ' + borderColor;
+        } catch (e) {
+            // ignore invalid color values
+            console.warn('Invalid card color for task', task.id, cardColor);
+        }
+    }
+    // Attach event listeners to action buttons (avoid inline onclick handlers)
+    console.log('createTaskElement: creating buttons for task', task.id);
+    const editBtn = taskDiv.querySelector('.edit-btn');
+    if (editBtn) {
+        // visual hint to ensure button is visible/clickable while debugging
+        try { editBtn.style.cursor = 'pointer'; editBtn.style.outline = '0'; } catch(e){}
+        editBtn.addEventListener('click', (e) => {
+            console.log('edit button clicked for task', e.currentTarget.dataset.id);
+            const id = parseInt(e.currentTarget.dataset.id, 10);
+            editTask(id);
+            e.stopPropagation();
+        });
+        console.log('attached edit listener to', task.id);
+    } else {
+        console.warn('edit button not found for task', task.id);
+    }
+    const toggleBtn = taskDiv.querySelector('.toggle-status-btn');
+    if (toggleBtn) toggleBtn.addEventListener('click', (e) => {
+        console.log('toggle status clicked for', e.currentTarget.dataset.id);
+        const id = parseInt(e.currentTarget.dataset.id, 10);
+        toggleTaskStatus(id);
+        e.stopPropagation();
+    });
+    const delBtn = taskDiv.querySelector('.delete-btn');
+    if (delBtn) delBtn.addEventListener('click', (e) => {
+        console.log('delete clicked for', e.currentTarget.dataset.id);
+        const id = parseInt(e.currentTarget.dataset.id, 10);
+        deleteTask(id);
+        e.stopPropagation();
+    });
+    // end debug helpers
     return taskDiv;
 }
 
@@ -177,6 +270,18 @@ function openAddTaskModal() {
     }
     modal.style.display = 'block';
     console.log('Modal opened successfully');
+    // wire up color preview for the static modal
+    const colorInput = document.getElementById('taskCardColor');
+    const colorPreview = document.getElementById('taskCardColorPreview');
+    if (colorInput && colorPreview) {
+        colorPreview.style.background = colorInput.value || '#fecaca';
+        // Remove previous input listeners to avoid duplicates
+        colorInput.replaceWith(colorInput.cloneNode(true));
+        const newColorInput = document.getElementById('taskCardColor');
+        newColorInput.addEventListener('input', () => {
+            colorPreview.style.background = newColorInput.value;
+        });
+    }
 }
 
 function closeTaskModal() {
@@ -203,6 +308,7 @@ async function handleTaskSubmit(e) {
     const priority = document.getElementById('taskPriority')?.value;
     const dueDate = document.getElementById('taskDueDate')?.value;
     const estimatedHours = document.getElementById('taskEstimatedHours')?.value;
+    const cardColor = document.getElementById('taskCardColor')?.value || '#fecaca';
     const status = document.getElementById('taskStatus')?.value || 'TODO';
 
     console.log('Form values:', {
@@ -213,6 +319,7 @@ async function handleTaskSubmit(e) {
         priority,
         dueDate,
         estimatedHours,
+        cardColor,
         status
     });
 
@@ -220,6 +327,18 @@ async function handleTaskSubmit(e) {
     if (!title?.trim()) {
         console.error('Validation failed: Title is required');
         showErrorMessage('Task title is required');
+        return;
+    }
+    if (!priority) {
+        showErrorMessage('Priority is required');
+        return;
+    }
+    if (!dueDate) {
+        showErrorMessage('Due date and time are required');
+        return;
+    }
+    if (!estimatedHours) {
+        showErrorMessage('Estimated hours are required');
         return;
     }
 
@@ -233,6 +352,34 @@ async function handleTaskSubmit(e) {
         estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
         progress: 0 // Initial progress for new tasks
     };
+
+    // Include card color
+    taskData.card_color = cardColor;
+
+    // For new tasks, include a client-side idempotency token to avoid duplicate creates
+    if (!taskId) {
+        try {
+            // Prefer crypto.randomUUID when available
+            if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                taskData.client_token = window.crypto.randomUUID();
+            } else if (window.crypto && window.crypto.getRandomValues) {
+                const arr = new Uint32Array(4);
+                window.crypto.getRandomValues(arr);
+                taskData.client_token = Array.from(arr).map(n => n.toString(16)).join('-');
+            } else {
+                taskData.client_token = 'ct_' + Date.now() + '_' + Math.floor(Math.random()*1000000);
+            }
+        } catch (e) {
+            taskData.client_token = 'ct_' + Date.now() + '_' + Math.floor(Math.random()*1000000);
+        }
+    }
+
+    // Collect subtasks
+    const subtasks = [];
+    document.querySelectorAll('#subtasksContainer .subtask-input').forEach(input => {
+        const v = (input.value || '').trim();
+        if (v) subtasks.push(v);
+    });
 
     // Add due date if provided, ensuring proper UTC handling
     if (dueDate) {
@@ -278,6 +425,42 @@ async function handleTaskSubmit(e) {
         }
         
         console.log('Task saved successfully');
+        // If created and there are subtasks, create them via API
+        let createdTask = null;
+        if (!taskId) {
+            createdTask = data.task || data.task || null;
+            // Support different response shapes
+            const newTaskId = createdTask && (createdTask.id || createdTask.id === 0) ? createdTask.id : (data.task && data.task.id) ? data.task.id : null;
+            if (newTaskId && subtasks.length > 0) {
+                for (const st of subtasks) {
+                    try {
+                        await fetch(`/api/tasks/${newTaskId}/subtasks`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ title: st })
+                        });
+                    } catch (err) {
+                        console.warn('Failed to create subtask', err);
+                    }
+                }
+            }
+        } else {
+            // If updating existing task and subtasks present, create any new subtasks
+            if (taskId && subtasks.length > 0) {
+                for (const st of subtasks) {
+                    try {
+                        await fetch(`/api/tasks/${taskId}/subtasks`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ title: st })
+                        });
+                    } catch (err) {
+                        console.warn('Failed to create subtask', err);
+                    }
+                }
+            }
+        }
+
         await loadTasks(); // Refresh task list
         closeTaskModal();
         showSuccessMessage(taskId ? 'Task updated successfully' : 'Task created successfully');
@@ -290,21 +473,116 @@ async function handleTaskSubmit(e) {
     }
 }
 
-async function editTask(taskId) {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    modalTitle.textContent = 'Edit Task';
-    document.getElementById('taskId').value = task.id;
-    document.getElementById('taskTitle').value = task.title;
-    document.getElementById('taskDescription').value = task.description || '';
-    document.getElementById('taskProject').value = task.project_id || '';
-    document.getElementById('taskPriority').value = task.priority.toLowerCase();
-    document.getElementById('taskDueDate').value = formatDateForInput(task.due_date);
-    document.getElementById('taskEstimatedHours').value = task.estimated_hours || '';
-
-    taskModal.style.display = 'block';
+// Subtask UI helpers
+function addSubtaskRow() {
+    const container = document.getElementById('subtasksContainer');
+    if (!container) return;
+    const row = document.createElement('div');
+    row.className = 'subtask-row';
+    row.innerHTML = `<input type="text" class="subtask-input" placeholder="Subtask title"> <button type="button" class="btn small subtask-remove">Remove</button>`;
+    container.appendChild(row);
 }
+
+function removeSubtaskRow(btn) {
+    const row = btn ? btn.closest('.subtask-row') : null;
+    if (row) row.remove();
+}
+
+async function editTask(taskId) {
+    console.log('editTask called with id:', taskId);
+    try {
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) {
+            console.warn('editTask: task not found for id', taskId);
+            return;
+        }
+
+        modalTitle.textContent = 'Edit Task';
+        document.getElementById('taskId').value = task.id;
+        document.getElementById('taskTitle').value = task.title;
+        document.getElementById('taskDescription').value = task.description || '';
+        // ensure project select can accept string value
+        document.getElementById('taskProject').value = task.project_id ? String(task.project_id) : '';
+        // select options in the modal use uppercase values (HIGH/MEDIUM/LOW)
+        document.getElementById('taskPriority').value = (task.priority || 'medium').toUpperCase();
+        // due date may be null or malformed; guard it
+        try {
+            document.getElementById('taskDueDate').value = formatDateForInput(task.due_date);
+        } catch (err) {
+            console.warn('editTask: failed to format due date', task.due_date, err);
+            document.getElementById('taskDueDate').value = '';
+        }
+        document.getElementById('taskEstimatedHours').value = task.estimated_hours || '';
+        console.log('editTask: populated basic fields for', taskId);
+
+    // set card color if present and wire preview
+    const cardColorInput = document.getElementById('taskCardColor');
+    const cardColorPreview = document.getElementById('taskCardColorPreview');
+    if (cardColorInput) {
+        try {
+            cardColorInput.value = task.card_color || task.cardColor || '#fecaca';
+        } catch (e) {
+            cardColorInput.value = '#fecaca';
+        }
+        if (cardColorPreview) cardColorPreview.style.background = cardColorInput.value;
+        // Ensure preview updates when user picks a color
+        // Remove any previous listener by cloning then re-wiring (safe) or simply add a fresh listener
+        try {
+            const fresh = cardColorInput.cloneNode(true);
+            cardColorInput.parentNode.replaceChild(fresh, cardColorInput);
+            fresh.addEventListener('input', (e) => {
+                if (cardColorPreview) cardColorPreview.style.background = e.target.value;
+            });
+        } catch (err) {
+            // fallback: try to attach directly
+            cardColorInput.addEventListener('input', (e) => {
+                if (cardColorPreview) cardColorPreview.style.background = e.target.value;
+            });
+        }
+    }
+
+    // set status if available
+    const statusSelect = document.getElementById('taskStatus');
+    if (statusSelect) {
+        try {
+            // modal options are uppercase (TODO/IN_PROGRESS/COMPLETED)
+            statusSelect.value = (task.status || 'TODO').toUpperCase();
+        } catch (e) {
+            statusSelect.value = 'TODO';
+        }
+    }
+
+    // populate subtasks into the modal (if any)
+    const subtasksContainer = document.getElementById('subtasksContainer');
+    if (subtasksContainer) {
+        subtasksContainer.innerHTML = '';
+        if (Array.isArray(task.subtasks) && task.subtasks.length > 0) {
+            task.subtasks.forEach(st => {
+                const row = document.createElement('div');
+                row.className = 'subtask-row';
+                // include subtask id as data attribute so future enhancements can use it
+                row.dataset.subtaskId = st.id || '';
+                row.innerHTML = `<input type="text" class="subtask-input" value="${(st.title||'').replace(/"/g,'&quot;')}" placeholder="Subtask title"> <button type="button" class="btn small subtask-remove">Remove</button>`;
+                subtasksContainer.appendChild(row);
+            });
+        } else {
+            // leave a single empty row for convenience
+            const row = document.createElement('div');
+            row.className = 'subtask-row';
+            row.innerHTML = `<input type="text" class="subtask-input" placeholder="Subtask title"> <button type="button" class="btn small subtask-remove">Remove</button>`;
+            subtasksContainer.appendChild(row);
+        }
+    }
+
+        taskModal.style.display = 'block';
+        console.log('editTask: modal displayed for', taskId);
+    } catch (e) {
+        console.error('editTask: unexpected error', e);
+    }
+}
+
+// Ensure editTask is available globally for inline onclick handlers
+try { window.editTask = editTask; } catch (e) { /* ignore in non-browser env */ }
 
 async function toggleTaskStatus(taskId) {
     try {
@@ -435,3 +713,32 @@ function showSuccessMessage(message) {
 function showErrorMessage(message) {
     createNotification(message, 'error');
 }
+
+// Subtask toggle function
+async function toggleSubtask(subtaskId) {
+    try {
+        const response = await fetch(`/api/subtasks/${subtaskId}/toggle`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to toggle subtask');
+        }
+
+        // Reload tasks to reflect the updated subtask status and progress
+        await loadTasks();
+        showSuccessMessage('Subtask updated successfully');
+    } catch (error) {
+        console.error('Error toggling subtask:', error);
+        showErrorMessage('Failed to update subtask');
+        // Reload tasks to revert checkbox state
+        await loadTasks();
+    }
+}
+
+// Make toggleSubtask available globally for inline handlers
+window.toggleSubtask = toggleSubtask;

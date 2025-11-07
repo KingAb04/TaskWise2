@@ -1,16 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TaskWise - Analytics</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tasks.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .analytics-grid { display: grid; grid-template-columns: 1fr 360px; gap: 20px; max-width: 1100px; margin: 24px auto; }
+        .analytics-card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 6px 18px rgba(16,24,40,0.06); }
+        .analytics-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px }
+        .activity-log { max-height: 520px; overflow: auto; }
+        .activity-row { padding:8px 0; border-bottom:1px solid #f1f5f9; }
+        .kpi-grid { display:flex; gap:12px; }
+        .kpi { flex:1; background:#f8fafc; padding:12px; border-radius:8px; text-align:center }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Analytics (Coming Soon)</h1>
-        <p>This is a placeholder analytics page. The dashboard analytics are under development.</p>
-        <p><a href="{{ url_for('dashboard') }}">← Back to Dashboard</a></p>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="logo">
+            <img src="{{ url_for('static', filename='assets/taskwise-logo-1.png') }}" alt="TaskWise Logo">
+        </div>
+        <div class="divider"></div>
+        
+        <nav class="nav-items">
+            <a href="{{ url_for('dashboard') }}" class="nav-item">
+                <i class="fas fa-chart-pie nav-icon"></i>
+                <span>Dashboard</span>
+            </a>
+            <div class="nav-item" onclick="toggleProjects()">
+                <i class="fas fa-folder nav-icon"></i>
+                <span>Projects</span>
+                <i class="fas fa-chevron-down nav-arrow"></i>
+            </div>
+            <div class="collapsible" id="projects">
+                <a href="#" class="nav-item sub-item" onclick="showProjectModal('new')">
+                    <i class="fas fa-plus nav-icon"></i>
+                    <span>Add New Project</span>
+                </a>
+                <a href="#" class="nav-item sub-item" onclick="filterProjects('work')">
+                    <i class="fas fa-briefcase nav-icon"></i>
+                    <span>Work Projects</span>
+                </a>
+                <a href="#" class="nav-item sub-item" onclick="filterProjects('personal')">
+                    <i class="fas fa-home nav-icon"></i>
+                    <span>Personal</span>
+                </a>
+            </div>
+            <a href="{{ url_for('tasks') }}" class="nav-item">
+                <i class="fas fa-tasks nav-icon"></i>
+                <span>All Tasks</span>
+            </a>
+            <a href="{{ url_for('focus') }}" class="nav-item">
+                <i class="fas fa-clock nav-icon"></i>
+                <span>Focus Timer</span>
+            </a>
+            <div class="nav-item active">
+                <i class="fas fa-chart-bar nav-icon"></i>
+                <span>Analytics</span>
+            </div>
+            <a href="{{ url_for('calendar') }}" class="nav-item">
+                <i class="fas fa-calendar nav-icon"></i>
+                <span>Calendar</span>
+            </a>
+        </nav>
+
+        <div class="profile">
+            <div class="profile-avatar">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="profile-info">
+                <h4>{{ current_user.username if current_user else 'Guest' }}</h4>
+                <p>{{ current_user.email if current_user else '' }}</p>
+                <a href="{{ url_for('logout') }}" class="profile-logout">
+                    <i class="fas fa-sign-out-alt"></i> Sign out
+                </a>
+            </div>
+            <div class="profile-settings" id="profileSettings">
+                <i class="fas fa-cog"></i>
+                <div class="profile-menu" id="profileMenu">
+                    <div class="profile-user">{{ current_user.username if current_user else 'Guest' }}</div>
+                    <a href="{{ url_for('logout') }}" class="profile-logout">Sign out</a>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <!-- Top Bar -->
+    <div class="topbar">
+        <div class="topbar-left">
+            <h2>Analytics</h2>
+            <p>Productivity insights and activity log</p>
+        </div>
+        <div class="topbar-right">
+            <!-- reserved for controls / filters -->
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="analytics-grid">
+            <div>
+                <div class="analytics-card">
+                    <div class="analytics-header">
+                        <h3>Overview</h3>
+                        <small id="summaryDateRange">Last 30 days</small>
+                    </div>
+                    <div class="kpi-grid" style="margin-bottom:12px">
+                        <div class="kpi"><div id="kpiTotal" style="font-weight:700;font-size:1.1rem">0</div><div style="font-size:0.85rem;color:#6b7280">Total tasks</div></div>
+                        <div class="kpi"><div id="kpiCompleted" style="font-weight:700;font-size:1.1rem">0</div><div style="font-size:0.85rem;color:#6b7280">Completed</div></div>
+                        <div class="kpi"><div id="kpiCompletionRate" style="font-weight:700;font-size:1.1rem">0%</div><div style="font-size:0.85rem;color:#6b7280">Completion rate</div></div>
+                    </div>
+
+                    <canvas id="statusPie" height="160"></canvas>
+                </div>
+
+                <div class="analytics-card" style="margin-top:16px">
+                    <h3 style="margin-bottom:8px">Tasks by Project</h3>
+                    <canvas id="projectBar" height="120"></canvas>
+                </div>
+            </div>
+
+            <div>
+                <div class="analytics-card">
+                    <div class="analytics-header"><h3>Activity Log</h3><small>Recent updates</small></div>
+                    <div class="activity-log" id="activityLog">
+                        <!-- activity rows inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/taskwise.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
 </body>
 </html>

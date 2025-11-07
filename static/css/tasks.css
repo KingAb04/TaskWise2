@@ -9,29 +9,37 @@
     display: flex;
     flex-direction: column;
     gap: 15px;
+    /* keep the list centered and constrain its width so items don't stick to the left */
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
 }
 
 .task-item {
     background: white;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    border-radius: 12px;
+    /* compact rectangular card: limit height so cards stay small */
     display: flex;
+    flex-direction: column;
     justify-content: space-between;
-    align-items: flex-start;
-    transition: all 0.3s ease;
-    border: 1px solid #f0f0f0;
+    padding: 14px;
+    box-shadow: 0 4px 12px rgba(16,24,40,0.06);
+    transition: all 0.2s ease;
+    border: 1px solid #eef2f7;
     position: relative;
     overflow: hidden;
+    min-height: 110px;
+    max-height: none; /* Allow expansion for subtasks */
 }
 
 .task-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(16,24,40,0.08);
 }
 
 .task-content {
-    flex-grow: 1;
+    flex: 1 1 auto;
+    overflow: auto;
 }
 
 .task-header {
@@ -115,6 +123,8 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    /* nudge the priority badge a little to the right so it doesn't sit too close to the title */
+    margin-left: 12px;
 }
 
 .priority-high {
@@ -135,30 +145,30 @@
     border: 1px solid rgba(56, 161, 105, 0.2);
 }
 
-.task-priority i {
-    font-size: 0.7rem;
-}
-
-.task-status {
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 600;
+.task-item {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     display: flex;
-    align-items: center;
-    gap: 6px;
+    justify-content: space-between;
+    align-items: flex-start;
+    transition: all 0.3s ease;
+    border: 1px solid #f0f0f0;
+    position: relative;
+    overflow: visible; /* ensure content isn't clipped into a tiny scroll area */
+    max-height: none;
+    width: 100%;
 }
 
-.status-todo {
-    background: rgba(49, 130, 206, 0.1);
-    color: #3182CE;
-    border: 1px solid rgba(49, 130, 206, 0.2);
+.task-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
-.status-in-progress {
-    background: rgba(128, 90, 213, 0.1);
-    color: #805AD5;
-    border: 1px solid rgba(128, 90, 213, 0.2);
+.task-content {
+    flex-grow: 1;
+    overflow: visible; /* allow content to size naturally */
 }
 
 .status-completed {
@@ -176,6 +186,9 @@
 .task-status i {
     font-size: 0.8rem;
 }
+
+/* small extra spacing for status badge to separate it from the priority badge */
+.task-header .task-status { margin-left: 6px; }
 
 /* Search and Filters */
 .task-filters {
@@ -399,4 +412,74 @@
         transform: translateX(100%);
         opacity: 0;
     }
+}
+
+/* Subtasks styles */
+.subtasks-list {
+    margin-top: 12px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.subtasks-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #475569;
+}
+
+.subtasks-header i {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.subtask-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.subtask-item:last-child {
+    border-bottom: none;
+}
+
+.subtask-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    flex: 1;
+    user-select: none;
+}
+
+.subtask-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #3b82f6;
+}
+
+.subtask-title {
+    font-size: 0.875rem;
+    color: #334155;
+    transition: all 0.2s ease;
+}
+
+.subtask-title.completed {
+    text-decoration: line-through;
+    color: #94a3b8;
+}
+
+.subtask-checkbox-label:hover .subtask-title {
+    color: #1e293b;
+}
+
+.subtask-checkbox-label:hover .subtask-title.completed {
+    color: #64748b;
 }

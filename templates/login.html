@@ -7,39 +7,35 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
-  <div class="auth-split">
-    <!-- Left: Form -->
-    <section class="auth-side form-side">
-      <header class="brand-row">
-        <div class="brand">
-          <img src="{{ url_for('static', filename='assets/taskwise-logo-1.png') }}" alt="TaskWise" />
-          <h1>TaskWise</h1>
-        </div>
-      </header>
+<body class="auth-body">
+  <div class="auth-shell">
+    <section class="auth-card form-card">
+      <div class="form-header">
+        <h1>Welcome Back!</h1>
+        <p>Enter your credentials to continue where you left off.</p>
+      </div>
 
-      <div class="form-wrap">
-        <h2 class="page-title">Welcome Back!</h2>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flashes">
+            {% for category, msg in messages %}
+              <div class="flash {{ category }}">{{ msg }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            <div class="flashes">
-              {% for category, msg in messages %}
-                <div class="flash {{ category }}">{{ msg }}</div>
-              {% endfor %}
-            </div>
-          {% endif %}
-        {% endwith %}
-
-        <form method="post" action="{{ url_for('login') }}" class="auth-form modern">
+      <form method="post" action="{{ url_for('login') }}" class="auth-form">
+        <div>
           <label for="identifier">Email or Username</label>
           <input id="identifier" name="identifier" required placeholder="you@example.com or username">
+        </div>
 
+        <div>
           <label for="password">Enter Your Password</label>
           <div class="input-with-icon">
             <input id="password" name="password" type="password" required placeholder="Your password">
             <button type="button" class="icon-btn" aria-label="Toggle password visibility" onclick="togglePw('password', this)">
-              <!-- eye icon -->
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 5C7 5 2.73 8.11 1 12c1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7Z" stroke="currentColor" stroke-width="1.5"/>
                 <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
@@ -49,19 +45,21 @@
           <div class="help-row">
             <a class="link" href="#">Forgot Password?</a>
           </div>
+        </div>
 
-          <button type="submit" class="btn primary block">Log In</button>
-        </form>
+        <button type="submit" class="btn primary block">Log In</button>
+      </form>
 
-        <p class="switch-link">Don't have an account? <a href="{{ url_for('register') }}">Create Account</a></p>
-      </div>
+      <p class="switch-link">Don't have an account? <a href="{{ url_for('register') }}">Create Account</a></p>
     </section>
 
-    <!-- Right: Hero -->
-    <aside class="auth-side hero-side">
-      <a class="top-cta" href="{{ url_for('register') }}">Create Account</a>
-      <div class="hero-copy">
+    <aside class="auth-card hero-card">
+      <div class="hero-art" aria-hidden="true"></div>
+      <div class="hero-shape" aria-hidden="true"></div>
+      <a class="hero-cta" href="{{ url_for('register') }}">Create Account</a>
+      <div class="hero-content">
         <h2>Take your productivity to the next level.</h2>
+        <p>Plan, track, and finish everything that matters with TaskWise.</p>
       </div>
     </aside>
   </div>

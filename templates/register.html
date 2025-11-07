@@ -7,45 +7,46 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
-  <div class="auth-split">
-    <!-- Left: Hero -->
-    <aside class="auth-side hero-side">
-      <a class="top-cta" href="{{ url_for('login') }}">Log In</a>
-      <div class="hero-copy">
+<body class="auth-body">
+  <div class="auth-shell">
+    <aside class="auth-card hero-card">
+      <div class="hero-art" aria-hidden="true"></div>
+      <div class="hero-shape" aria-hidden="true"></div>
+      <a class="hero-cta" href="{{ url_for('login') }}">Log In</a>
+      <div class="hero-content">
         <h2>Take your productivity to the next level.</h2>
+        <p>Stay focused with smart reminders, progress, and insights.</p>
       </div>
     </aside>
 
-    <!-- Right: Form -->
-    <section class="auth-side form-side">
-      <header class="brand-row">
-        <div class="brand">
-          <img src="{{ url_for('static', filename='assets/taskwise-logo-1.png') }}" alt="TaskWise" />
-          <h1>TaskWise</h1>
-        </div>
-      </header>
+    <section class="auth-card form-card">
+      <div class="form-header">
+        <h1>Create an Account</h1>
+        <p>It’s simple and easy. Tell us about you and get started.</p>
+      </div>
 
-      <div class="form-wrap">
-        <h2 class="page-title">Create an Account</h2>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flashes">
+            {% for category, msg in messages %}
+              <div class="flash {{ category }}">{{ msg }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            <div class="flashes">
-              {% for category, msg in messages %}
-                <div class="flash {{ category }}">{{ msg }}</div>
-              {% endfor %}
-            </div>
-          {% endif %}
-        {% endwith %}
-
-        <form method="post" action="{{ url_for('register') }}" class="auth-form modern">
+      <form method="post" action="{{ url_for('register') }}" class="auth-form">
+        <div>
           <label for="username">Fullname</label>
           <input id="username" name="username" required placeholder="Your name">
+        </div>
 
+        <div>
           <label for="email">Email Address</label>
           <input id="email" name="email" type="email" required placeholder="you@example.com">
+        </div>
 
+        <div>
           <label for="password">Enter A Password</label>
           <div class="input-with-icon">
             <input id="password" name="password" type="password" required placeholder="Create a password">
@@ -56,12 +57,12 @@
               </svg>
             </button>
           </div>
+        </div>
 
-          <button type="submit" class="btn primary block">Create Account</button>
-        </form>
+        <button type="submit" class="btn primary block">Create Account</button>
+      </form>
 
-        <p class="switch-link">Already have an account? <a href="{{ url_for('login') }}">Log In</a></p>
-      </div>
+      <p class="switch-link">Already have an account? <a href="{{ url_for('login') }}">Log In</a></p>
     </section>
   </div>
 

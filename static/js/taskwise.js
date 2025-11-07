@@ -179,6 +179,8 @@ class TaskWise {
             this.renderTaskGrid();
             this.loadStats(); // Refresh stats
             this.showNotification('success', 'Task created successfully!');
+            // Refresh dashboard recent tasks
+            try { this.renderDashboard(); } catch (e) { console.warn('Failed to refresh dashboard', e); }
             return result.task;
         } catch (error) {
             console.error('Failed to create task:', error);
@@ -195,6 +197,8 @@ class TaskWise {
             this.renderTaskGrid();
             this.loadStats(); // Refresh stats
             this.showNotification('success', 'Task updated successfully!');
+            // Refresh dashboard recent tasks
+            try { this.renderDashboard(); } catch (e) { console.warn('Failed to refresh dashboard', e); }
             return result.task;
         } catch (error) {
             console.error('Failed to update task:', error);
@@ -208,6 +212,8 @@ class TaskWise {
             this.renderTaskGrid();
             this.loadStats(); // Refresh stats
             this.showNotification('success', 'Task deleted successfully!');
+            // Refresh dashboard recent tasks
+            try { this.renderDashboard(); } catch (e) { console.warn('Failed to refresh dashboard', e); }
         } catch (error) {
             console.error('Failed to delete task:', error);
         }
@@ -383,12 +389,43 @@ class TaskWise {
             const taskCount = this.tasks.filter(task => task.project_id === project.id).length;
             const projectItem = document.createElement('div');
             projectItem.className = `nav-item sub-item${this.currentProjectId === project.id ? ' active' : ''}`;
+            projectItem.dataset.projectId = project.id;
             projectItem.innerHTML = `
                 <i class="fas fa-circle nav-icon" style="color: ${project.color}"></i>
-                <span>${this.escapeHtml(project.name)}</span>
+                <span class="project-name">${this.escapeHtml(project.name)}</span>
                 <span class="project-task-count">${taskCount}</span>
+                <div class="project-actions" style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+                    <button class="btn tiny project-edit" title="Edit project" style="background:none;border:none;cursor:pointer;color:#6b7280;"><i class="fas fa-edit"></i></button>
+                    <button class="btn tiny project-delete" title="Delete project" style="background:none;border:none;cursor:pointer;color:#ef4444;"><i class="fas fa-trash"></i></button>
+                </div>
             `;
-            projectItem.addEventListener('click', () => this.filterByProject(project.id));
+            projectItem.addEventListener('click', (e) => {
+                // If clicking action buttons, don't trigger project filter
+                if (e.target.closest('.project-actions')) return;
+                this.filterByProject(project.id);
+            });
+            // Edit handler
+            projectItem.querySelector('.project-edit').addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.showProjectModal(project);
+            });
+            // Delete handler
+            projectItem.querySelector('.project-delete').addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (!confirm(`Delete project "${project.name}" and remove it from tasks?`)) return;
+                try {
+                    await this.apiCall(`/projects/${project.id}`, 'DELETE');
+                    // Remove project locally and re-render
+                    this.projects = this.projects.filter(p => p.id !== project.id);
+                    // unset currentProjectId if it was the deleted one
+                    if (this.currentProjectId === project.id) this.currentProjectId = null;
+                    this.renderProjectsList();
+                    await this.loadTasks();
+                    this.showNotification('success', 'Project deleted');
+                } catch (err) {
+                    console.error('Failed to delete project', err);
+                }
+            });
             projectsContainer.appendChild(projectItem);
         });
     }
@@ -471,7 +508,7 @@ class TaskWise {
                         <h3 style="margin: 0 !important; font-size: 1.5rem !important; font-weight: 600 !important;">${isEdit ? 'Edit Task' : 'New Task'}</h3>
                         <button class="modal-close" type="button" style="background: none !important; border: none !important; font-size: 2rem !important; cursor: pointer !important; color: #6b7280 !important; line-height: 1 !important; padding: 0 !important; width: 32px !important; height: 32px !important; display: flex !important; align-items: center !important; justify-content: center !important; border-radius: 8px !important; transition: background 0.2s !important;">&times;</button>
                     </div>
-                    <form class="modal-body" id="taskForm" style="padding: 24px !important;">
+                    <form class="modal-body" id="dashboardTaskForm" style="padding: 24px !important;">
                         <div class="form-group" style="margin-bottom: 20px !important;">
                             <label style="display: flex !important; align-items: center !important; gap: 6px !important; margin-bottom: 8px !important; font-weight: 600 !important; color: #374151 !important;">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -503,7 +540,7 @@ class TaskWise {
                                     </svg>
                                     <span>Priority</span>
                                 </label>
-                                <select name="priority" style="width: 100% !important; padding: 12px 14px !important; border: 1px solid #d1d5db !important; border-radius: 8px !important; font-size: 0.95rem !important; box-sizing: border-box !important; transition: all 0.3s ease !important; cursor: pointer !important;">
+                                <select name="priority" required style="width: 100% !important; padding: 12px 14px !important; border: 1px solid #d1d5db !important; border-radius: 8px !important; font-size: 0.95rem !important; box-sizing: border-box !important; transition: all 0.3s ease !important; cursor: pointer !important;">
                                     <option value="low" ${task?.priority === 'low' ? 'selected' : ''}>Low</option>
                                     <option value="medium" ${task?.priority === 'medium' || !task ? 'selected' : ''}>Medium</option>
                                     <option value="high" ${task?.priority === 'high' ? 'selected' : ''}>High</option>
@@ -533,7 +570,7 @@ class TaskWise {
                                     </svg>
                                     <span>Due Date</span>
                                 </label>
-                                <input type="date" name="due_date" id="dueDateInput" value="${taskDueDate.split('T')[0] || ''}" style="width: 100% !important; padding: 12px 14px !important; border: 1.5px solid #d1d5db !important; border-radius: 8px !important; font-size: 0.95rem !important; box-sizing: border-box !important; background: linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%) !important; color: #374151 !important; font-weight: 500 !important; transition: all 0.3s ease !important; cursor: pointer !important;">
+                                <input type="date" name="due_date" id="dueDateInput" required value="${taskDueDate.split('T')[0] || ''}" style="width: 100% !important; padding: 12px 14px !important; border: 1.5px solid #d1d5db !important; border-radius: 8px !important; font-size: 0.95rem !important; box-sizing: border-box !important; background: linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%) !important; color: #374151 !important; font-weight: 500 !important; transition: all 0.3s ease !important; cursor: pointer !important;">
                             </div>
                             <div class="form-group">
                                 <label style="display: flex !important; align-items: center !important; gap: 6px !important; margin-bottom: 8px !important; font-weight: 600 !important; color: #667eea !important;">
@@ -544,14 +581,14 @@ class TaskWise {
                                     <span>Due Time</span>
                                 </label>
                                 <div style="display: flex !important; gap: 8px !important; align-items: center !important;">
-                                    <select name="due_hour" id="dueHourInput" style="flex: 1 !important; padding: 12px 14px !important; border: 1.5px solid #d1d5db !important; border-radius: 8px !important; font-size: 0.95rem !important; box-sizing: border-box !important; background: linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%) !important; color: #374151 !important; font-weight: 500 !important; cursor: pointer !important;">
+                                    <select name="due_hour" id="dueHourInput" required style="flex: 1 !important; padding: 12px 14px !important; border: 1.5px solid #d1d5db !important; border-radius: 8px !important; font-size: 0.95rem !important; box-sizing: border-box !important; background: linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%) !important; color: #374151 !important; font-weight: 500 !important; cursor: pointer !important;">
                                         ${this.generateHourOptions(taskDueDate)}
                                     </select>
                                     <span style="font-weight: 600 !important; color: #6b7280 !important;">:</span>
-                                    <select name="due_minute" id="dueMinuteInput" style="flex: 1 !important; padding: 12px 14px !important; border: 1.5px solid #d1d5db !important; border-radius: 8px !important; font-size: 0.95rem !important; box-sizing: border-box !important; background: linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%) !important; color: #374151 !important; font-weight: 500 !important; cursor: pointer !important;">
+                                    <select name="due_minute" id="dueMinuteInput" required style="flex: 1 !important; padding: 12px 14px !important; border: 1.5px solid #d1d5db !important; border-radius: 8px !important; font-size: 0.95rem !important; box-sizing: border-box !important; background: linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%) !important; color: #374151 !important; font-weight: 500 !important; cursor: pointer !important;">
                                         ${this.generateMinuteOptions(taskDueDate)}
                                     </select>
-                                    <select name="due_period" id="duePeriodInput" style="flex: 0.8 !important; padding: 12px 10px !important; border: 1.5px solid #d1d5db !important; border-radius: 8px !important; font-size: 0.95rem !important; box-sizing: border-box !important; background: linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%) !important; color: #374151 !important; font-weight: 600 !important; cursor: pointer !important;">
+                                    <select name="due_period" id="duePeriodInput" required style="flex: 0.8 !important; padding: 12px 10px !important; border: 1.5px solid #d1d5db !important; border-radius: 8px !important; font-size: 0.95rem !important; box-sizing: border-box !important; background: linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%) !important; color: #374151 !important; font-weight: 600 !important; cursor: pointer !important;">
                                         ${this.generatePeriodOptions(taskDueDate)}
                                     </select>
                                 </div>
@@ -573,7 +610,6 @@ class TaskWise {
                                 <div id="colorPreview" style="flex: 1 !important; padding: 12px 14px !important; border: 1.5px solid #d1d5db !important; border-radius: 8px !important; background: ${task?.card_color || '#fecaca'} !important; color: #1f2937 !important; font-weight: 600 !important; text-align: center !important; font-size: 0.85rem !important;">Preview</div>
                             </div>
                         </div>
-                        ${isEdit ? `
                         <div class="form-group" style="margin-bottom: 20px !important;">
                             <label style="display: flex !important; align-items: center !important; justify-content: space-between !important; margin-bottom: 12px !important; font-weight: 600 !important; color: #374151 !important;">
                                 <div style="display: flex !important; align-items: center !important; gap: 6px !important;">
@@ -592,14 +628,13 @@ class TaskWise {
                                 </button>
                             </label>
                             <div id="subtasksList" style="display: flex !important; flex-direction: column !important; gap: 8px !important; max-height: 200px !important; overflow-y: auto !important;">
-                                <!-- Subtasks will be loaded here -->
+                                <!-- Subtasks will be loaded here and new inline subtasks can be added -->
                             </div>
                         </div>
-                        ` : ''}
                     </form>
                     <div class="modal-footer" style="padding: 20px 24px !important; border-top: 1px solid #e5e7eb !important; display: flex !important; justify-content: flex-end !important; gap: 12px !important; background: #f9fafb !important;">
                         <button type="button" class="btn secondary modal-cancel" style="padding: 10px 20px !important; border-radius: 8px !important; font-weight: 500 !important; cursor: pointer !important; background: white !important; border: 1px solid #d1d5db !important; color: #374151 !important;">Cancel</button>
-                        <button type="submit" form="taskForm" class="btn primary" style="padding: 10px 20px !important; border-radius: 8px !important; font-weight: 500 !important; cursor: pointer !important; background: #667eea !important; border: none !important; color: white !important;">${isEdit ? 'Update' : 'Create'} Task</button>
+                        <button type="submit" form="dashboardTaskForm" class="btn primary" style="padding: 10px 20px !important; border-radius: 8px !important; font-weight: 500 !important; cursor: pointer !important; background: #667eea !important; border: none !important; color: white !important;">${isEdit ? 'Update' : 'Create'} Task</button>
                     </div>
                 </div>
             `;
@@ -625,36 +660,124 @@ class TaskWise {
                 });
             }
 
-            modal.querySelector('#taskForm').addEventListener('submit', async (e) => {
+            // Subtask add button (inline)
+            const addSubtaskBtn = modal.querySelector('#addSubtaskBtn');
+            const subtasksList = modal.querySelector('#subtasksList');
+            function addInlineSubtask(title = '') {
+                if (!subtasksList) return;
+                const row = document.createElement('div');
+                row.className = 'subtask-inline-row';
+                row.style.cssText = 'display:flex;gap:8px;align-items:center;';
+                row.innerHTML = `<input type="text" name="subtask_title" class="subtask-inline-input" placeholder="Subtask title" value="${title}"><button type="button" class="btn small subtask-inline-remove">Remove</button>`;
+                subtasksList.appendChild(row);
+                const removeBtn = row.querySelector('.subtask-inline-remove');
+                removeBtn.addEventListener('click', () => row.remove());
+            }
+
+            if (addSubtaskBtn) {
+                addSubtaskBtn.addEventListener('click', () => addInlineSubtask());
+            }
+
+            // If editing, clicking Add should still add an inline row (in addition to prompt)
+            if (isEdit && addSubtaskBtn) {
+                addSubtaskBtn.addEventListener('click', () => addInlineSubtask());
+            }
+
+            // Load existing subtasks into inline list if editing
+            if (isEdit) {
+                this.loadSubtasks(taskId, modal).then(() => {
+                    // When loadSubtasks populates #subtasksList it replaces content; ensure existing items have remove handlers
+                    modal.querySelectorAll('.delete-subtask').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const subtaskId = e.currentTarget.dataset.subtaskId;
+                            this.deleteSubtask(taskId, subtaskId, modal);
+                        });
+                    });
+                });
+            }
+
+            modal.querySelector('#dashboardTaskForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
+                const submitBtn = modal.querySelector('button[type="submit"][form="dashboardTaskForm"]');
+                if (submitBtn) submitBtn.disabled = true;
                 const formData = new FormData(e.target);
                 const taskData = Object.fromEntries(formData.entries());
-                
+
                 // Combine date and time inputs into a single datetime
                 const combinedDateTime = this.combineDateTimeInputs(formData);
                 if (combinedDateTime) {
                     taskData.due_date = combinedDateTime;
                 }
-                
+
                 // Remove the individual time fields
                 delete taskData.due_hour;
                 delete taskData.due_minute;
                 delete taskData.due_period;
-                
+
                 // Convert empty strings to null
                 Object.keys(taskData).forEach(key => {
                     if (taskData[key] === '') taskData[key] = null;
                 });
 
+                // Validate required fields (extra guard)
+                if (!taskData.title) { alert('Title is required'); return; }
+                if (!taskData.priority) { alert('Priority is required'); return; }
+                if (!taskData.due_date) { alert('Due date and time are required'); return; }
+
+                // Collect inline subtasks
+                const inlineSubtasks = [];
+                modal.querySelectorAll('input[name="subtask_title"]').forEach(inp => {
+                    const v = (inp.value || '').trim();
+                    if (v) inlineSubtasks.push(v);
+                });
+
                 try {
-                    if (isEdit) {
-                        await this.updateTask(taskId, taskData);
-                    } else {
-                        await this.createTask(taskData);
+                    // For new tasks, attach a client-side idempotency token to help prevent duplicates
+                    if (!isEdit) {
+                        try {
+                            if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                                taskData.client_token = window.crypto.randomUUID();
+                            } else if (window.crypto && window.crypto.getRandomValues) {
+                                const arr = new Uint32Array(4);
+                                window.crypto.getRandomValues(arr);
+                                taskData.client_token = Array.from(arr).map(n => n.toString(16)).join('-');
+                            } else {
+                                taskData.client_token = 'ct_' + Date.now() + '_' + Math.floor(Math.random()*1000000);
+                            }
+                        } catch (tokErr) {
+                            taskData.client_token = 'ct_' + Date.now() + '_' + Math.floor(Math.random()*1000000);
+                        }
                     }
+
+                    let createdOrUpdatedTask = null;
+                    if (isEdit) {
+                        createdOrUpdatedTask = await this.updateTask(taskId, taskData);
+                    } else {
+                        createdOrUpdatedTask = await this.createTask(taskData);
+                    }
+
+                    // If there are inline subtasks and we have a task id, create them
+                    const newTaskId = createdOrUpdatedTask && createdOrUpdatedTask.id ? createdOrUpdatedTask.id : (isEdit ? taskId : null);
+                    if (newTaskId && inlineSubtasks.length > 0) {
+                        for (const st of inlineSubtasks) {
+                            try {
+                                await fetch(`/api/tasks/${newTaskId}/subtasks`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ title: st })
+                                });
+                            } catch (err) {
+                                console.warn('Failed to create subtask', err);
+                            }
+                        }
+                    }
+
                     this.closeModal(modal);
                 } catch (error) {
                     // Error handling is done in the API methods
+                }
+                finally {
+                    if (submitBtn) submitBtn.disabled = false;
                 }
             });
 
@@ -808,28 +931,28 @@ class TaskWise {
         }
     }
 
-    showProjectModal() {
+    showProjectModal(project = null) {
         const modal = document.createElement('div');
         modal.className = 'modal-overlay';
         modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(4px); padding: 20px;';
         modal.innerHTML = `
             <div class="modal" style="background: white; border-radius: 16px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.15); position: relative;">
                 <div class="modal-header" style="padding: 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-                    <h3 style="margin: 0; font-size: 1.5rem; font-weight: 600;">New Project</h3>
+                    <h3 style="margin: 0; font-size: 1.5rem; font-weight: 600;">${project ? 'Edit Project' : 'New Project'}</h3>
                     <button class="modal-close" style="background: none; border: none; font-size: 2rem; cursor: pointer; color: #6b7280; line-height: 1; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: background 0.2s;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">&times;</button>
                 </div>
                 <form class="modal-body" id="projectForm" style="padding: 24px;">
                     <div class="form-group" style="margin-bottom: 20px;">
                         <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Project Name *</label>
-                        <input type="text" name="name" required style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem;">
+                            <input type="text" name="name" required value="${project ? this.escapeHtml(project.name) : ''}" style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem;">
                     </div>
                     <div class="form-group" style="margin-bottom: 20px;">
                         <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Description</label>
-                        <textarea name="description" rows="3" style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; resize: vertical;"></textarea>
+                        <textarea name="description" rows="3" style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; resize: vertical;">${project ? this.escapeHtml(project.description || '') : ''}</textarea>
                     </div>
                     <div class="form-group" style="margin-bottom: 20px;">
                         <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Color</label>
-                        <input type="color" name="color" value="#667eea" style="width: 100%; height: 48px; padding: 4px; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer;">
+                        <input type="color" name="color" value="${project ? (project.color || '#667eea') : '#667eea'}" style="width: 100%; height: 48px; padding: 4px; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer;">
                     </div>
                 </form>
                 <div class="modal-footer" style="padding: 20px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px; background: #f9fafb;">
@@ -848,17 +971,27 @@ class TaskWise {
             if (e.target === modal) this.closeModal(modal);
         });
 
-        modal.querySelector('#projectForm').addEventListener('submit', async (e) => {
+            modal.querySelector('#projectForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
             const projectData = Object.fromEntries(formData.entries());
             
             try {
-                const result = await this.apiCall('/projects', 'POST', projectData);
-                this.projects.push(result.project);
-                this.renderProjectsList();
-                this.showNotification('success', 'Project created successfully!');
-                this.closeModal(modal);
+                    let result = null;
+                    if (project && project.id) {
+                        // Update existing project
+                        result = await this.apiCall(`/projects/${project.id}`, 'PUT', projectData);
+                        // Replace in local list
+                        this.projects = this.projects.map(p => p.id === project.id ? result.project : p);
+                        this.showNotification('success', 'Project updated successfully!');
+                    } else {
+                        // Create new project
+                        result = await this.apiCall('/projects', 'POST', projectData);
+                        this.projects.push(result.project);
+                        this.showNotification('success', 'Project created successfully!');
+                    }
+                    this.renderProjectsList();
+                    this.closeModal(modal);
             } catch (error) {
                 // Error handling is done in the API method
             }
@@ -897,9 +1030,10 @@ class TaskWise {
 
         // Update the UI to show which project is selected
         document.querySelectorAll('#projects .nav-item.sub-item').forEach(item => {
-            item.classList.remove('active');
-            if (item.querySelector(`[data-project-id="${projectId}"]`)) {
+            if (parseInt(item.dataset.projectId) === projectId) {
                 item.classList.add('active');
+            } else {
+                item.classList.remove('active');
             }
         });
 
@@ -1014,8 +1148,57 @@ class TaskWise {
     }
 
     renderDashboard() {
-        // This method is called after initial load
-        console.log('TaskWise Dashboard loaded successfully!');
+        // Load and render recent tasks into the dashboard
+        (async () => {
+            try {
+                const container = document.getElementById('dashboardTasksList') || document.getElementById('dashboardRecentList');
+                if (!container) return;
+                // Clear existing
+                container.innerHTML = '';
+
+                // Fetch recent tasks (limit 6)
+                const result = await this.apiCall('/tasks/recent?limit=6');
+                const recent = result.tasks || [];
+
+                if (recent.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-tasks"></i>
+                            <h3>No recent tasks</h3>
+                            <p>Create tasks and they'll appear here.</p>
+                        </div>`;
+                    return;
+                }
+
+                // Render each recent task using existing createTaskCard helper if available
+                recent.forEach(task => {
+                    // Normalize field names used by createTaskCard
+                    const normalized = Object.assign({}, task, {
+                        id: task.id,
+                        priority: (task.priority || '').toLowerCase(),
+                        project_name: task.project_name || (task.project && task.project.name) || 'No Project',
+                        card_color: task.card_color || task.cardColor || '#fecaca',
+                        subtask_count: task.subtask_count || (task.subtasks ? task.subtasks.length : 0),
+                        subtask_completed: task.completed_subtasks || 0,
+                        progress: task.progress || 0,
+                        status: (task.status || '').toLowerCase()
+                    });
+
+                    try {
+                        const card = this.createTaskCard(normalized);
+                        container.appendChild(card);
+                    } catch (e) {
+                        // Fallback simple card
+                        const el = document.createElement('div');
+                        el.className = 'task-card';
+                        el.innerHTML = `<div class="task-content"><h3>${this.escapeHtml(task.title || 'Untitled')}</h3><p>${this.escapeHtml(task.description || '')}</p></div>`;
+                        container.appendChild(el);
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to render dashboard recent tasks:', error);
+            }
+        })();
     }
 }
 

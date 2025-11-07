@@ -189,142 +189,17 @@
             </div>
         </div>
 
-        <!-- Task Cards Section -->
-        <div class="tasks-section">
+        <!-- Task Highlights section (shows tasks on dashboard without using the word "Recent") -->
+        <div class="tasks-section" id="dashboardTasksSection">
             <div class="section-header">
-                <h2>Recent Tasks</h2>
-                <div class="filter-tabs">
-                    <button class="tab active">All</button>
-                    <button class="tab">Today</button>
-                    <button class="tab">This Week</button>
-                    <button class="tab">High Priority</button>
-                </div>
+                <h2>Task Highlights</h2>
             </div>
-            
-            <div class="task-grid">
-                <!-- Priority Task Card -->
-                <div class="task-card priority-high">
-                    <div class="task-header">
-                        <div class="task-priority high">
-                            <i class="fas fa-exclamation"></i>
-                        </div>
-                        <div class="task-actions">
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-ellipsis-h"></i>
-                        </div>
-                    </div>
-                    <div class="task-content">
-                        <h3>Website Redesign</h3>
-                        <p>Complete the homepage redesign with new branding and improved UX flow</p>
-                        <div class="task-meta">
-                            <div class="task-project">
-                                <i class="fas fa-folder"></i>
-                                <span>Design Team</span>
-                            </div>
-                            <div class="task-due">
-                                <i class="fas fa-calendar"></i>
-                                <span>Due Today</span>
-                            </div>
-                        </div>
-                        <div class="task-progress">
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: 75%"></div>
-                            </div>
-                            <span>75%</span>
-                        </div>
-                        <div class="task-assignees">
-                            <div class="assignee-avatar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)">JD</div>
-                            <div class="assignee-avatar" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)">AS</div>
-                            <div class="assignee-avatar" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)">MK</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Regular Task Card -->
-                <div class="task-card priority-medium">
-                    <div class="task-header">
-                        <div class="task-priority medium">
-                            <i class="fas fa-minus"></i>
-                        </div>
-                        <div class="task-actions">
-                            <i class="far fa-star"></i>
-                            <i class="fas fa-ellipsis-h"></i>
-                        </div>
-                    </div>
-                    <div class="task-content">
-                        <h3>API Documentation</h3>
-                        <p>Write comprehensive documentation for the new REST API endpoints</p>
-                        <div class="task-meta">
-                            <div class="task-project">
-                                <i class="fas fa-folder"></i>
-                                <span>Backend</span>
-                            </div>
-                            <div class="task-due">
-                                <i class="fas fa-calendar"></i>
-                                <span>Tomorrow</span>
-                            </div>
-                        </div>
-                        <div class="task-progress">  
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: 45%"></div>
-                            </div>
-                            <span>45%</span>
-                        </div>
-                        <div class="task-assignees">
-                            <div class="assignee-avatar" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%)">RJ</div>
-                            <div class="assignee-avatar" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)">LM</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Low Priority Task Card -->
-                <div class="task-card priority-low">
-                    <div class="task-header">
-                        <div class="task-priority low">
-                            <i class="fas fa-arrow-down"></i>
-                        </div>
-                        <div class="task-actions">
-                            <i class="far fa-star"></i>
-                            <i class="fas fa-ellipsis-h"></i>
-                        </div>
-                    </div>
-                    <div class="task-content">
-                        <h3>Team Meeting Prep</h3>
-                        <p>Prepare agenda and materials for weekly team sync meeting</p>
-                        <div class="task-meta">
-                            <div class="task-project">
-                                <i class="fas fa-folder"></i>
-                                <span>Management</span>
-                            </div>
-                            <div class="task-due">
-                                <i class="fas fa-calendar"></i>
-                                <span>Friday</span>
-                            </div>
-                        </div>
-                        <div class="task-progress">
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: 20%"></div>
-                            </div>
-                            <span>20%</span>
-                        </div>
-                        <div class="task-assignees">
-                            <div class="assignee-avatar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)">JD</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Add New Task Card -->
-                <div class="task-card add-task" onclick="openTaskModal()">
-                    <div class="add-task-content">
-                        <div class="add-task-icon">
-                            <i class="fas fa-plus"></i>
-                        </div>
-                        <h3>Add New Task</h3>
-                        <p>Click here to create a new task and boost your productivity</p>
-                    </div>
-                </div>
+            <div class="task-grid" id="dashboardTasksList">
+                <!-- Dashboard tasks will be rendered here by JS -->
             </div>
         </div>
+
+        <!-- Task Cards Section removed per user request -->
 
         <!-- Recent Activity & Calendar -->
         <div class="bottom-section">

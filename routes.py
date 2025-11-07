@@ -1,6 +1,6 @@
 from flask import request, jsonify, render_template, session, redirect, url_for, flash
 from config import db
-from models import Task, Project, TaskStatus, Priority, User, Subtask
+from models import Task, Project, TaskStatus, Priority, User, Subtask, Activity
 from datetime import datetime
 import json
 import os
@@ -8,6 +8,9 @@ from types import SimpleNamespace
 
 def register_routes(app):
     skip_db = os.getenv('SKIP_DB') == '1'
+    # In-memory idempotency map for task creation: client_token -> task (or task id)
+    # This prevents duplicate tasks when client retries/create is called multiple times.
+    idempotency_map = {}
     # Helper utilities for in-memory session-backed dev data when SKIP_DB is enabled
     def _ensure_dev_data():
         """Ensure that session has sample projects and tasks for dev mode."""
@@ -244,6 +247,18 @@ def register_routes(app):
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)}), 500
 
+    @app.route('/api/activity', methods=['GET'])
+    def get_activity():
+        try:
+            limit = int(request.args.get('limit', 50))
+            if skip_db:
+                logs = session.get('activity_log', [])
+                return jsonify({'success': True, 'activities': logs[:limit]})
+            acts = Activity.query.order_by(Activity.created_at.desc()).limit(limit).all()
+            return jsonify({'success': True, 'activities': [a.to_dict() for a in acts]})
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
     @app.route('/api/tasks', methods=['POST'])
     def create_task():
         """Create a new task"""
@@ -251,6 +266,26 @@ def register_routes(app):
             data = request.get_json()
             if not data:
                 return jsonify({'success': False, 'error': 'Invalid payload'}), 400
+            # idempotency: if client provided a client_token and we've already processed it,
+            # return the previous result to avoid duplicates
+            client_token = data.get('client_token')
+            if client_token:
+                prev = idempotency_map.get(client_token)
+                if prev:
+                    # prev may be a dict (dev) or a task id (db)
+                    if skip_db:
+                        return jsonify({'success': True, 'message': 'Task created (dev, idempotent)', 'task': prev}), 200
+                    else:
+                        # return the stored task representation if we cached it, else fetch from DB by id
+                        if isinstance(prev, dict):
+                            return jsonify({'success': True, 'message': 'Task created (idempotent)', 'task': prev}), 200
+                        else:
+                            try:
+                                task = Task.query.get(int(prev))
+                                if task:
+                                    return jsonify({'success': True, 'message': 'Task created (idempotent)', 'task': task.to_dict()}), 200
+                            except Exception:
+                                pass
             # Validate required fields
             if not data.get('title'):
                 return jsonify({'success': False, 'error': 'Title is required'}), 400
@@ -272,6 +307,22 @@ def register_routes(app):
                     'updated_at': now
                 }
                 tasks.append(task)
+                # record activity in dev session
+                notifs = session.get('activity_log', [])
+                notifs.insert(0, {
+                    'id': len(notifs) + 1,
+                    'event_type': 'task_created',
+                    'message': f"Task created: {task['title']}",
+                    'task_id': task['id'],
+                    'created_at': now
+                })
+                session['activity_log'] = notifs
+                # store idempotency mapping for dev mode
+                if client_token:
+                    try:
+                        idempotency_map[client_token] = task
+                    except Exception:
+                        pass
                 _save_dev_tasks(tasks)
                 return jsonify({'success': True, 'message': 'Task created (dev)', 'task': task}), 201
 
@@ -288,6 +339,19 @@ def register_routes(app):
                 task.due_date = datetime.fromisoformat(data['due_date'].replace('Z', '+00:00'))
             db.session.add(task)
             db.session.commit()
+            # record activity in DB
+            try:
+                act = Activity(event_type='task_created', message=f"Task created: {task.title}", task_id=task.id)
+                db.session.add(act)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+            # record idempotency mapping for DB-backed mode
+            if client_token:
+                try:
+                    idempotency_map[client_token] = task.id
+                except Exception:
+                    pass
             return jsonify({'success': True, 'message': 'Task created successfully', 'task': task.to_dict()}), 201
         except Exception as e:
             if not skip_db:
@@ -330,6 +394,17 @@ def register_routes(app):
                 if not found:
                     return jsonify({'success': False, 'error': 'Not found'}), 404
                 _save_dev_tasks(tasks)
+                # record activity in dev session
+                notifs = session.get('activity_log', [])
+                now = datetime.utcnow().isoformat() + 'Z'
+                notifs.insert(0, {
+                    'id': len(notifs) + 1,
+                    'event_type': 'task_updated',
+                    'message': f"Task updated: {t.get('title')}",
+                    'task_id': t.get('id'),
+                    'created_at': now
+                })
+                session['activity_log'] = notifs
                 return jsonify({'success': True, 'message': 'Task updated (dev)', 'task': t})
 
             task = Task.query.get_or_404(task_id)
@@ -357,6 +432,13 @@ def register_routes(app):
                     task.due_date = None
             task.updated_at = datetime.utcnow()
             db.session.commit()
+            # record activity
+            try:
+                act = Activity(event_type='task_updated', message=f"Task updated: {task.title}", task_id=task.id)
+                db.session.add(act)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
             return jsonify({'success': True, 'message': 'Task updated successfully', 'task': task.to_dict()})
         except Exception as e:
             if not skip_db:
@@ -372,12 +454,30 @@ def register_routes(app):
                 new_tasks = [t for t in tasks if int(t.get('id')) != int(task_id)]
                 if len(new_tasks) == len(tasks):
                     return jsonify({'success': False, 'error': 'Not found'}), 404
+                # record activity
+                now = datetime.utcnow().isoformat() + 'Z'
+                notifs = session.get('activity_log', [])
+                notifs.insert(0, {
+                    'id': len(notifs) + 1,
+                    'event_type': 'task_deleted',
+                    'message': f"Task deleted: {task_id}",
+                    'task_id': task_id,
+                    'created_at': now
+                })
+                session['activity_log'] = notifs
                 _save_dev_tasks(new_tasks)
                 return jsonify({'success': True, 'message': 'Task deleted (dev)'})
 
             task = Task.query.get_or_404(task_id)
             db.session.delete(task)
             db.session.commit()
+            # record activity
+            try:
+                act = Activity(event_type='task_deleted', message=f"Task deleted: {task.title}", task_id=task.id)
+                db.session.add(act)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
             return jsonify({'success': True, 'message': 'Task deleted successfully'})
         except Exception as e:
             if not skip_db:
@@ -418,6 +518,69 @@ def register_routes(app):
             db.session.add(project)
             db.session.commit()
             return jsonify({'success': True, 'message': 'Project created successfully', 'project': project.to_dict()}), 201
+        except Exception as e:
+            if not skip_db:
+                db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    @app.route('/api/projects/<int:project_id>', methods=['PUT'])
+    def update_project(project_id):
+        """Update an existing project"""
+        try:
+            data = request.get_json() or {}
+            if skip_db:
+                projects = _get_dev_projects()
+                found = False
+                for p in projects:
+                    if int(p.get('id')) == int(project_id):
+                        found = True
+                        p['name'] = data.get('name', p.get('name'))
+                        p['description'] = data.get('description', p.get('description'))
+                        p['color'] = data.get('color', p.get('color'))
+                        break
+                if not found:
+                    return jsonify({'success': False, 'error': 'Not found'}), 404
+                _save_dev_projects(projects)
+                return jsonify({'success': True, 'message': 'Project updated (dev)', 'project': next((x for x in projects if int(x.get("id"))==int(project_id)), None)})
+
+            project = Project.query.get_or_404(project_id)
+            if 'name' in data:
+                project.name = data['name']
+            if 'description' in data:
+                project.description = data['description']
+            if 'color' in data:
+                project.color = data['color']
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Project updated successfully', 'project': project.to_dict()})
+        except Exception as e:
+            if not skip_db:
+                db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    @app.route('/api/projects/<int:project_id>', methods=['DELETE'])
+    def delete_project(project_id):
+        """Delete a project and disassociate its tasks"""
+        try:
+            if skip_db:
+                projects = _get_dev_projects()
+                new_projects = [p for p in projects if int(p.get('id')) != int(project_id)]
+                if len(new_projects) == len(projects):
+                    return jsonify({'success': False, 'error': 'Not found'}), 404
+                # Remove project and set tasks' project_id to None
+                tasks = _get_dev_tasks()
+                for t in tasks:
+                    if int(t.get('project_id') or 0) == int(project_id):
+                        t['project_id'] = None
+                _save_dev_projects(new_projects)
+                _save_dev_tasks(tasks)
+                return jsonify({'success': True, 'message': 'Project deleted (dev)'})
+
+            project = Project.query.get_or_404(project_id)
+            # Disassociate tasks instead of cascading delete
+            Task.query.filter(Task.project_id == project_id).update({Task.project_id: None})
+            db.session.delete(project)
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Project deleted successfully'})
         except Exception as e:
             if not skip_db:
                 db.session.rollback()
@@ -522,7 +685,7 @@ def register_routes(app):
             
             from models import Subtask
             task = Task.query.get_or_404(task_id)
-            subtasks = Subtask.query.filter_by(task_id=task_id).order_by(Subtask.order).all()
+            subtasks = Subtask.query.filter_by(parent_task_id=task_id).order_by(Subtask.order).all()
             return jsonify({'success': True, 'subtasks': [s.to_dict() for s in subtasks]})
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)}), 500
@@ -549,13 +712,24 @@ def register_routes(app):
                 }
                 subtasks.append(subtask)
                 session[f'subtasks_{task_id}'] = subtasks
+                # record activity
+                now = datetime.utcnow().isoformat() + 'Z'
+                notifs = session.get('activity_log', [])
+                notifs.insert(0, {
+                    'id': len(notifs) + 1,
+                    'event_type': 'subtask_created',
+                    'message': f"Subtask created for task {task_id}: {subtask['title']}",
+                    'task_id': task_id,
+                    'created_at': now
+                })
+                session['activity_log'] = notifs
                 return jsonify({'success': True, 'subtask': subtask}), 201
             
             task = Task.query.get_or_404(task_id)
             
             # Create subtask by setting attributes directly
             subtask = Subtask()
-            subtask.task_id = task_id
+            subtask.parent_task_id = task_id
             subtask.title = data['title']
             subtask.order = len(task.subtasks)
             
@@ -564,6 +738,13 @@ def register_routes(app):
             
             # Update task progress based on subtasks
             update_task_progress_from_subtasks(task)
+            # record activity
+            try:
+                act = Activity(event_type='subtask_created', message=f"Subtask created for task {task.id}: {subtask.title}", task_id=task.id)
+                db.session.add(act)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
             
             return jsonify({'success': True, 'subtask': subtask.to_dict()}), 201
         except Exception as e:
@@ -588,6 +769,17 @@ def register_routes(app):
                                 else:
                                     s['completed_at'] = None
                                 session[key] = subtasks
+                                # record activity
+                                now = datetime.utcnow().isoformat() + 'Z'
+                                notifs = session.get('activity_log', [])
+                                notifs.insert(0, {
+                                    'id': len(notifs) + 1,
+                                    'event_type': 'subtask_toggled',
+                                    'message': f"Subtask toggled for task {s.get('task_id')}: {s.get('title')}",
+                                    'task_id': s.get('task_id'),
+                                    'created_at': now
+                                })
+                                session['activity_log'] = notifs
                                 return jsonify({'success': True, 'subtask': s})
                 return jsonify({'success': False, 'error': 'Subtask not found'}), 404
             
@@ -596,10 +788,17 @@ def register_routes(app):
             db.session.commit()
             
             # Update task progress
-            task = Task.query.get(subtask.task_id)
+            task = Task.query.get(subtask.parent_task_id)
             if task:
                 update_task_progress_from_subtasks(task)
-            
+            # record activity
+            try:
+                act = Activity(event_type='subtask_toggled', message=f"Subtask toggled for task {subtask.parent_task_id}: {subtask.title}", task_id=subtask.parent_task_id)
+                db.session.add(act)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
             return jsonify({'success': True, 'subtask': subtask.to_dict()})
         except Exception as e:
             if not skip_db:
@@ -619,7 +818,7 @@ def register_routes(app):
                 return jsonify({'success': True})
             
             subtask = Subtask.query.get_or_404(subtask_id)
-            task_id = subtask.task_id
+            task_id = subtask.parent_task_id
             db.session.delete(subtask)
             db.session.commit()
             

@@ -43,11 +43,11 @@ class User(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 # Import all models
-from .base import Project, Task
+from .base import Project, Task, Activity
 from .progress_tracking import TimeEntry, Subtask, TaskDependency, ProgressSnapshot
 
 __all__ = [
     'Project', 'Task', 'TimeEntry', 'Subtask', 'TaskDependency', 
     'User',
-    'ProgressSnapshot', 'TaskStatus', 'Priority'
+    'ProgressSnapshot', 'TaskStatus', 'Priority', 'Activity'
 ]
