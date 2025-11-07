@@ -3,76 +3,85 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Create Account - TaskWise</title>
+  <title>Create an Account - TaskWise</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="auth-body">
-  <div class="auth-shell">
-    <aside class="auth-card hero-card">
-      <div class="hero-art" aria-hidden="true"></div>
-      <div class="hero-shape" aria-hidden="true"></div>
-      <a class="hero-cta" href="{{ url_for('login') }}">Log In</a>
-      <div class="hero-content">
-        <h2>Take your productivity to the next level.</h2>
-        <p>Stay focused with smart reminders, progress, and insights.</p>
-      </div>
-    </aside>
-
-    <section class="auth-card form-card">
-      <div class="form-header">
-        <h1>Create an Account</h1>
-        <p>It’s simple and easy. Tell us about you and get started.</p>
-      </div>
-
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          <div class="flashes">
-            {% for category, msg in messages %}
-              <div class="flash {{ category }}">{{ msg }}</div>
-            {% endfor %}
+<body>
+  <div class="wrap">
+    <div class="card">
+      <aside class="left" aria-hidden="true">
+        <div class="content">
+          <div class="top-row">
+            <a class="login-link" href="{{ url_for('login') }}">Log In</a>
           </div>
-        {% endif %}
-      {% endwith %}
-
-      <form method="post" action="{{ url_for('register') }}" class="auth-form">
-        <div>
-          <label for="username">Fullname</label>
-          <input id="username" name="username" required placeholder="Your name">
+          <h2>Take your productivity to the next level.</h2>
+          <p style="opacity:.92;margin-top:10px;line-height:1.45">A simple, beautiful workspace to help you stay focused and ship great work.</p>
         </div>
+      </aside>
 
-        <div>
-          <label for="email">Email Address</label>
-          <input id="email" name="email" type="email" required placeholder="you@example.com">
-        </div>
+      <main class="right" aria-labelledby="create-account">
+        <section>
+          <h1 id="create-account">Create an Account</h1>
+          <p class="lead">It's simple and easy.</p>
 
-        <div>
-          <label for="password">Enter A Password</label>
-          <div class="input-with-icon">
-            <input id="password" name="password" type="password" required placeholder="Create a password">
-            <button type="button" class="icon-btn" aria-label="Toggle password visibility" onclick="togglePw('password', this)">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 5C7 5 2.73 8.11 1 12c1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7Z" stroke="currentColor" stroke-width="1.5"/>
-                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
-              </svg>
-            </button>
-          </div>
-        </div>
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              <div class="flashes">
+                {% for category, msg in messages %}
+                  <div class="flash {{ category }}">{{ msg }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% endwith %}
 
-        <button type="submit" class="btn primary block">Create Account</button>
-      </form>
+          <form method="post" action="{{ url_for('register') }}" id="regForm" novalidate>
+            <div class="field">
+              <label for="username">Username</label>
+              <input id="username" name="username" type="text" placeholder="Your username" autocomplete="username" required />
+            </div>
 
-      <p class="switch-link">Already have an account? <a href="{{ url_for('login') }}">Log In</a></p>
-    </section>
+            <div class="field">
+              <label for="email">Email Address</label>
+              <input id="email" name="email" type="email" placeholder="example@company.com" autocomplete="email" required />
+            </div>
+
+            <div class="field password-wrap">
+              <label for="password">Enter A Password</label>
+              <input id="password" name="password" type="password" placeholder="••••••••" minlength="6" autocomplete="new-password" required />
+              <button type="button" class="password-toggle" id="pwToggle" aria-label="Toggle password visibility">👁️</button>
+              <div class="small">Use 6 or more characters with a mix of letters and numbers.</div>
+            </div>
+
+            <div style="margin-top:6px">
+              <button type="submit" class="btn">Create Account</button>
+            </div>
+
+            <p class="note">By creating an account, you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.</p>
+          </form>
+        </section>
+      </main>
+    </div>
   </div>
 
   <script>
-    function togglePw(id, btn){
-      const input = document.getElementById(id);
-      const isPw = input.type === 'password';
-      input.type = isPw ? 'text' : 'password';
-      btn.classList.toggle('active', !isPw);
-    }
+    (function(){
+      const pw = document.getElementById('password');
+      const btn = document.getElementById('pwToggle');
+
+      if(pw && btn) {
+        btn.addEventListener('click', ()=>{
+          if(pw.type === 'password'){ 
+            pw.type = 'text'; 
+            btn.innerHTML = '👁️‍🗨️';
+          }
+          else { 
+            pw.type = 'password'; 
+            btn.innerHTML = '👁️';
+          }
+        });
+      }
+    })();
   </script>
 </body>
 </html>

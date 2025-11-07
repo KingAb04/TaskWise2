@@ -7,40 +7,67 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/calendar.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
 </head>
 <body>
-    <div class="app-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="logo-container">
-                    <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="TaskWise" class="logo-img">
-                    <h1>TaskWise</h1>
-                </div>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="logo">
+            <img src="{{ url_for('static', filename='assets/taskwise-logo-1.png') }}" alt="TaskWise Logo">
+        </div>
+        <div class="divider"></div>
+        
+        <nav class="nav-items">
+            <a href="{{ url_for('dashboard') }}" class="nav-item">
+                <i class="fas fa-chart-pie nav-icon"></i>
+                <span>Dashboard</span>
+            </a>
+            <div class="nav-item" onclick="toggleProjects()">
+                <i class="fas fa-folder nav-icon"></i>
+                <span>Projects</span>
+                <i class="fas fa-chevron-down nav-arrow"></i>
             </div>
-            <nav class="sidebar-nav">
-                <a href="{{ url_for('dashboard') }}" class="nav-item">
-                    <i class="fas fa-home"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="{{ url_for('tasks') }}" class="nav-item">
-                    <i class="fas fa-tasks"></i>
-                    <span>Tasks</span>
-                </a>
-                <a href="{{ url_for('calendar') }}" class="nav-item active">
-                    <i class="fas fa-calendar"></i>
-                    <span>Calendar</span>
-                </a>
-                <a href="{{ url_for('focus') }}" class="nav-item">
-                    <i class="fas fa-clock"></i>
-                    <span>Focus Timer</span>
-                </a>
-            </nav>
-        </aside>
+            <div class="collapsible" id="projects">
+                <!-- Projects will be dynamically loaded here by JS -->
+            </div>
+            <a href="{{ url_for('tasks') }}" class="nav-item">
+                <i class="fas fa-tasks nav-icon"></i>
+                <span>All Tasks</span>
+            </a>
+            <a href="{{ url_for('focus') }}" class="nav-item">
+                <i class="fas fa-clock nav-icon"></i>
+                <span>Focus Timer</span>
+            </a>
+            <a href="{{ url_for('analytics') }}" class="nav-item">
+                <i class="fas fa-chart-bar nav-icon"></i>
+                <span>Analytics</span>
+            </a>
+            <a href="{{ url_for('calendar') }}" class="nav-item active">
+                <i class="fas fa-calendar nav-icon"></i>
+                <span>Calendar</span>
+            </a>
+        </nav>
 
-        <!-- Main Content -->
-        <div class="calendar-page">
+        <div class="profile">
+            <div class="profile-avatar">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="profile-info">
+                <h4>{{ current_user.username if current_user else 'Guest' }}</h4>
+                <p>{{ current_user.email if current_user else '' }}</p>
+                <a href="{{ url_for('logout') }}" class="profile-logout">
+                    <i class="fas fa-sign-out-alt"></i> Sign out
+                </a>
+            </div>
+            <div class="profile-settings" id="profileSettings">
+                <i class="fas fa-cog"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="calendar-page">
             <!-- Page Header -->
             <div class="page-header">
                 <div class="header-title">

@@ -280,17 +280,19 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
-    <script src="{{ url_for('static', filename='js/taskwise.js') }}?v=2"></script>
+    <script src="{{ url_for('static', filename='js/taskwise.js') }}?v=3"></script>
     <script src="{{ url_for('static', filename='js/taskwise-timer.js') }}"></script>
     <script>
-        // Initialize TaskWise app
-        const taskWise = new TaskWise();
-        
-        // Global helper function for opening task modal
+        // TaskWise will be automatically initialized by DOMContentLoaded in taskwise.js
+        // Just define helper function that waits for taskWise to be ready
         function openTaskModal(taskId = null) {
             console.log('openTaskModal called with taskId:', taskId);
-            console.log('taskWise object:', taskWise);
-            taskWise.showTaskModal(taskId);
+            console.log('taskWise object:', window.taskWise);
+            if (window.taskWise) {
+                window.taskWise.showTaskModal(taskId);
+            } else {
+                console.error('TaskWise not initialized yet!');
+            }
         }
     </script>
 </body>

@@ -39,18 +39,7 @@
                 <i class="fas fa-chevron-down nav-arrow"></i>
             </div>
             <div class="collapsible" id="projects">
-                <a href="#" class="nav-item sub-item" onclick="showProjectModal('new')">
-                    <i class="fas fa-plus nav-icon"></i>
-                    <span>Add New Project</span>
-                </a>
-                <a href="#" class="nav-item sub-item" onclick="filterProjects('work')">
-                    <i class="fas fa-briefcase nav-icon"></i>
-                    <span>Work Projects</span>
-                </a>
-                <a href="#" class="nav-item sub-item" onclick="filterProjects('personal')">
-                    <i class="fas fa-home nav-icon"></i>
-                    <span>Personal</span>
-                </a>
+                <!-- Projects will be dynamically loaded here by JS -->
             </div>
             <a href="{{ url_for('tasks') }}" class="nav-item">
                 <i class="fas fa-tasks nav-icon"></i>
@@ -83,10 +72,6 @@
             </div>
             <div class="profile-settings" id="profileSettings">
                 <i class="fas fa-cog"></i>
-                <div class="profile-menu" id="profileMenu">
-                    <div class="profile-user">{{ current_user.username if current_user else 'Guest' }}</div>
-                    <a href="{{ url_for('logout') }}" class="profile-logout">Sign out</a>
-                </div>
             </div>
         </div>
     </div>

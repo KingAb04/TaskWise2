@@ -1,121 +1,298 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TaskWise - Smart Task Management Dashboard</title>
-  <link rel="stylesheet" href="static/css/dashboard.css" />
-  <link rel="stylesheet" href="static/css/cards.css" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskWise - Smart Task Management Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}"> 
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cards.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/calendar.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}">
 </head>
 <body>
-  <!-- Sidebar Navigation -->
-  <div class="sidebar">
-    <div class="logo">
-      <img src="assets/taskwise-logo-1.png" alt="TaskWise Logo" />
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="logo">
+            <img src="{{ url_for('static', filename='assets/taskwise-logo-1.png') }}" alt="TaskWise Logo"> 
+        </div>
+        <div class="divider"></div>
+        
+        <nav class="nav-items">
+            <div class="nav-item active">
+                <i class="fas fa-chart-pie nav-icon"></i>
+                <span>Dashboard</span>
+            </div>
+            <div class="nav-item" onclick="toggleProjects()">
+                <i class="fas fa-folder nav-icon"></i>
+                <span>Projects</span>
+                <i class="fas fa-chevron-down nav-arrow"></i>
+            </div>
+            <div class="collapsible" id="projects">
+                <div class="nav-item sub-item" id="addProjectSidebarBtn" onclick="if(window.taskWise) window.taskWise.showProjectModal()">
+                    <i class="fas fa-plus nav-icon"></i>
+                    <span>Add New Project</span>
+                </div>
+                <div class="nav-item sub-item">
+                    <i class="fas fa-briefcase nav-icon"></i>
+                    <span>Work Projects</span>
+                </div>
+                <div class="nav-item sub-item">
+                    <i class="fas fa-home nav-icon"></i>
+                    <span>Personal</span>
+                </div>
+            </div>
+            <a href="{{ url_for('tasks') }}" class="nav-item">
+                <i class="fas fa-tasks nav-icon"></i>
+                <span>All Tasks</span>
+            </a>
+            <a href="{{ url_for('focus') }}" class="nav-item">
+                <i class="fas fa-clock nav-icon"></i>
+                <span>Focus Timer</span>
+            </a>
+            <a href="{{ url_for('analytics') }}" class="nav-item">
+                <i class="fas fa-chart-bar nav-icon"></i>
+                <span>Analytics</span>
+            </a>
+            <a href="{{ url_for('calendar') }}" class="nav-item">
+                <i class="fas fa-calendar nav-icon"></i>
+                <span>Calendar</span>
+            </a>
+        </nav>
+
+        <div class="profile">
+            <div class="profile-avatar">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="profile-info">
+                <h4>{{ current_user.username if current_user else 'John Doe' }}</h4>
+                <p>{{ current_user.email if current_user else 'john.doe@taskwise.com' }}</p>
+                <a href="{{ url_for('logout') }}" class="profile-logout">
+                    <i class="fas fa-sign-out-alt"></i> Sign out
+                </a>
+            </div>
+            <div class="profile-settings" id="profileSettings">
+                <i class="fas fa-cog"></i>
+                <div class="profile-menu" id="profileMenu">
+                    <div class="profile-user">{{ current_user.username if current_user else 'Guest' }}</div>
+                    <a href="{{ url_for('logout') }}" class="profile-logout">Sign out</a>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="divider"></div>
 
-    <nav class="nav-items">
-      <div class="nav-item active">
-        <i class="fas fa-chart-pie nav-icon"></i>
-        <span>Dashboard</span>
-      </div>
-
-      <div class="nav-item" onclick="toggleProjects()">
-        <i class="fas fa-folder nav-icon"></i>
-        <span>Projects</span>
-        <i class="fas fa-chevron-down nav-arrow"></i>
-      </div>
-
-      <div class="collapsible" id="projects">
-        <div class="nav-item sub-item"><i class="fas fa-plus nav-icon"></i><span>Add New Project</span></div>
-        <div class="nav-item sub-item"><i class="fas fa-briefcase nav-icon"></i><span>Work Projects</span></div>
-        <div class="nav-item sub-item"><i class="fas fa-home nav-icon"></i><span>Personal</span></div>
-      </div>
-
-      <div class="nav-item"><i class="fas fa-tasks nav-icon"></i><span>All Tasks</span></div>
-
-      <!-- ✅ Pomodoro Timer now opens focus.html -->
-      <div class="nav-item" onclick="window.location.href='focus.html'">
-        <i class="fas fa-clock nav-icon"></i>
-        <span>Pomodoro Timer</span>
-      </div>
-
-      <div class="nav-item"><i class="fas fa-chart-bar nav-icon"></i><span>Analytics</span></div>
-      <div class="nav-item" onclick="window.location.href='calendar.html'">
-        <i class="fas fa-calendar nav-icon"></i>
-        <span>Calendar</span>
-      </div>
-    </nav>
-
-    <div class="profile">
-      <div class="profile-avatar"><i class="fas fa-user-circle"></i></div>
-      <div class="profile-info">
-        <h4>John Doe</h4>
-        <p>john.doe@taskwise.com</p>
-      </div>
-      <div class="profile-settings"><i class="fas fa-cog"></i></div>
+    <!-- Top Bar -->
+    <div class="topbar">
+        <div class="topbar-left">
+            <h2>Welcome back, {{ current_user.username if current_user else 'John' }}! 👋</h2>
+            <p>Here's what's happening with your tasks today</p>
+        </div>
+        <div class="topbar-right">
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="global-search" placeholder="Search tasks, projects...">
+            </div>
+            <div class="notification-bell" id="notificationBell">
+                <i class="fas fa-bell"></i>
+                <span class="notification-badge" id="notificationBadge">0</span>
+                <div class="notifications-dropdown" id="notificationsDropdown" aria-hidden="true">
+                    <div class="notifications-header">
+                        <strong>Notifications</strong>
+                        <button id="clearAllBtn" class="btn small">Clear</button>
+                    </div>
+                    <div class="notifications-list" id="notificationsList">
+                        <!-- Items populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- Top Bar -->
-  <div class="topbar">
-    <div class="topbar-left">
-      <h2>Welcome back, John! 👋</h2>
-      <p>Here's what's happening with your tasks today</p>
+    <!-- Main Content -->
+    <div class="content">
+        <!-- Stats Overview -->
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>24</h3>
+                    <p>Total Tasks</p>
+                </div>
+                <div class="stat-trend up">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+12%</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>18</h3>
+                    <p>Completed</p>
+                </div>
+                <div class="stat-trend up">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+8%</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>6</h3>
+                    <p>In Progress</p>
+                </div>
+                <div class="stat-trend neutral">
+                    <i class="fas fa-minus"></i>
+                    <span>0%</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>2</h3>
+                    <p>Overdue</p>
+                </div>
+                <div class="stat-trend down">
+                    <i class="fas fa-arrow-down"></i>
+                    <span>-4%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Section -->
+        <div class="action-section">
+            <div class="section-header">
+                <h2>Quick Actions</h2>
+                <div class="action-buttons">
+                    <button class="btn primary" onclick="if(window.taskWise) window.taskWise.showTaskModal()">
+                        <i class="fas fa-plus"></i>
+                        New Task
+                    </button>
+                    <button class="btn secondary" onclick="if(window.taskWise) window.taskWise.showProjectModal()">
+                        <i class="fas fa-folder-plus"></i>
+                        New Project
+                    </button>
+                    <a href="{{ url_for('focus') }}" class="btn tertiary">
+                        <i class="fas fa-play"></i>
+                        Start Focus Timer
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task Highlights section (shows tasks on dashboard without using the word "Recent") -->
+        <div class="tasks-section" id="dashboardTasksSection">
+            <div class="section-header">
+                <h2>Task Highlights</h2>
+            </div>
+            <div class="task-grid" id="dashboardTasksList">
+                <!-- Dashboard tasks will be rendered here by JS -->
+            </div>
+        </div>
+
+        <!-- Task Cards Section removed per user request -->
+
+        <!-- Recent Activity & Calendar -->
+        <div class="bottom-section">
+            <div class="activity-panel">
+                <h3>Recent Activity</h3>
+                <div class="activity-list">
+                    <div class="activity-item">
+                        <div class="activity-icon completed">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="activity-content">
+                            <p><strong>You</strong> completed <em>Database Schema Design</em></p>
+                            <span>2 hours ago</span>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon assigned">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="activity-content">
+                            <p><strong>Sarah</strong> assigned <em>Mobile App Testing</em> to you</p>
+                            <span>4 hours ago</span>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon commented">
+                            <i class="fas fa-comment"></i>
+                        </div>
+                        <div class="activity-content">
+                            <p><strong>Mike</strong> commented on <em>Website Redesign</em></p>
+                            <span>6 hours ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="topbar-right">
-      <div class="search-container">
-        <i class="fas fa-search search-icon"></i>
-        <input type="text" class="global-search" placeholder="Search tasks, projects..." />
-      </div>
-      <div class="notification-bell">
-        <i class="fas fa-bell"></i>
-        <span class="notification-badge">3</span>
-      </div>
+
+    <!-- Task Details Modal -->
+    <div id="taskDetailsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="detailsModalTitle"></h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="task-details-content">
+                <div class="task-meta">
+                    <div class="meta-item">
+                        <i class="fas fa-calendar"></i>
+                        <span id="detailsDueDate"></span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-project-diagram"></i>
+                        <span id="detailsProject"></span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-flag"></i>
+                        <span id="detailsPriority"></span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-clock"></i>
+                        <span id="detailsEstimatedHours"></span>
+                    </div>
+                </div>
+                <div class="task-description" id="detailsDescription"></div>
+                <div class="task-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="detailsProgress"></div>
+                    </div>
+                    <span class="progress-text" id="detailsProgressText"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeTaskDetailsModal()">Close</button>
+                <button class="btn btn-primary" onclick="editTaskFromDetails()">Edit</button>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- Main Content (unchanged) -->
-  <div class="content">
-    <!-- Your existing dashboard content here -->
-    <!-- ... (everything you already had stays the same) ... -->
-  </div>
-
-  <script>
-    function toggleProjects() {
-      const projects = document.getElementById("projects");
-      const arrow = document.querySelector(".nav-arrow");
-      if (projects.style.display === "block") {
-        projects.style.display = "none";
-        arrow.style.transform = "rotate(0deg)";
-      } else {
-        projects.style.display = "block";
-        arrow.style.transform = "rotate(180deg)";
-      }
-    }
-
-    function openTaskModal() {
-      alert("New Task Modal would open here!");
-    }
-
-    // Tab switching functionality
-    document.querySelectorAll(".tab").forEach(tab => {
-      tab.addEventListener("click", function() {
-        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-        this.classList.add("active");
-      });
-    });
-
-    // Add some interactivity to task cards
-    document.querySelectorAll(".task-card:not(.add-task)").forEach(card => {
-      card.addEventListener("click", function() {
-        this.style.transform = "translateY(-2px)";
-        setTimeout(() => (this.style.transform = "translateY(0)"), 200);
-      });
-    });
-  </script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <script src="{{ url_for('static', filename='js/taskwise.js') }}?v=3"></script>
+    <script src="{{ url_for('static', filename='js/taskwise-timer.js') }}"></script>
+    <script>
+        // Global helper function for opening task modal
+        // Note: taskWise is initialized in taskwise.js via DOMContentLoaded
+        function openTaskModal(taskId = null) {
+            if (window.taskWise) {
+                console.log('openTaskModal called with taskId:', taskId);
+                window.taskWise.showTaskModal(taskId);
+            } else {
+                console.error('TaskWise not initialized yet');
+            }
+        }
+    </script>
 </body>
 </html>

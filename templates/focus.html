@@ -5,9 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TaskWise Focus Timer</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/focus.css') }}">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="focus-page pomodoro">
-  <a href="{{ url_for('dashboard') }}" class="back-to-dashboard">← Back to Dashboard</a>
+  <a href="{{ url_for('dashboard') }}" class="back-to-dashboard">
+    <i class="fas fa-arrow-left"></i> Back to Dashboard
+  </a>
   
   <div class="app">
     <header>

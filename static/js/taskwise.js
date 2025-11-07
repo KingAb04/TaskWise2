@@ -18,7 +18,16 @@ class TaskWise {
         if (document.getElementById('miniCalendar')) {
             this.initializeMiniCalendar();
         }
-        this.renderDashboard();
+        
+        // Render appropriate view based on page
+        const isDashboard = document.getElementById('dashboardTasksList') !== null;
+        const isTasksPage = document.getElementById('tasksList') !== null;
+        
+        if (isDashboard) {
+            this.renderDashboard();
+        } else if (isTasksPage) {
+            this.renderTaskGrid();
+        }
     }
 
     initializeMiniCalendar() {
@@ -147,7 +156,7 @@ class TaskWise {
             
             const result = await this.apiCall(endpoint);
             this.tasks = result.tasks;
-            this.renderTaskGrid();
+            // Don't auto-render here - let the caller decide when to render
         } catch (error) {
             console.error('Failed to load tasks:', error);
         }
@@ -175,12 +184,24 @@ class TaskWise {
     async createTask(taskData) {
         try {
             const result = await this.apiCall('/tasks', 'POST', taskData);
-            this.tasks.unshift(result.task);
-            this.renderTaskGrid();
+            
+            // Reload tasks from server to get the updated list
+            await this.loadTasks();
+            
+            // Check which page we're on and render appropriately
+            const isDashboard = document.getElementById('dashboardTasksList') !== null;
+            const isTasksPage = document.getElementById('tasksList') !== null;
+            
+            if (isDashboard) {
+                // On dashboard, render the recent tasks
+                this.renderDashboard();
+            } else if (isTasksPage) {
+                // On tasks page, render the full task grid  
+                this.renderTaskGrid();
+            }
+            
             this.loadStats(); // Refresh stats
             this.showNotification('success', 'Task created successfully!');
-            // Refresh dashboard recent tasks
-            try { this.renderDashboard(); } catch (e) { console.warn('Failed to refresh dashboard', e); }
             return result.task;
         } catch (error) {
             console.error('Failed to create task:', error);
@@ -190,15 +211,24 @@ class TaskWise {
     async updateTask(taskId, updates) {
         try {
             const result = await this.apiCall(`/tasks/${taskId}`, 'PUT', updates);
-            const taskIndex = this.tasks.findIndex(t => t.id === taskId);
-            if (taskIndex !== -1) {
-                this.tasks[taskIndex] = result.task;
+            
+            // Reload tasks from server to get the updated list
+            await this.loadTasks();
+            
+            // Check which page we're on and render appropriately
+            const isDashboard = document.getElementById('dashboardTasksList') !== null;
+            const isTasksPage = document.getElementById('tasksList') !== null;
+            
+            if (isDashboard) {
+                // On dashboard, render the recent tasks
+                this.renderDashboard();
+            } else if (isTasksPage) {
+                // On tasks page, render the full task grid
+                this.renderTaskGrid();
             }
-            this.renderTaskGrid();
+            
             this.loadStats(); // Refresh stats
             this.showNotification('success', 'Task updated successfully!');
-            // Refresh dashboard recent tasks
-            try { this.renderDashboard(); } catch (e) { console.warn('Failed to refresh dashboard', e); }
             return result.task;
         } catch (error) {
             console.error('Failed to update task:', error);
@@ -208,12 +238,24 @@ class TaskWise {
     async deleteTask(taskId) {
         try {
             await this.apiCall(`/tasks/${taskId}`, 'DELETE');
-            this.tasks = this.tasks.filter(t => t.id !== taskId);
-            this.renderTaskGrid();
+            
+            // Reload tasks from server to get the updated list
+            await this.loadTasks();
+            
+            // Check which page we're on and render appropriately
+            const isDashboard = document.getElementById('dashboardTasksList') !== null;
+            const isTasksPage = document.getElementById('tasksList') !== null;
+            
+            if (isDashboard) {
+                // On dashboard, render the recent tasks
+                this.renderDashboard();
+            } else if (isTasksPage) {
+                // On tasks page, render the full task grid
+                this.renderTaskGrid();
+            }
+            
             this.loadStats(); // Refresh stats
             this.showNotification('success', 'Task deleted successfully!');
-            // Refresh dashboard recent tasks
-            try { this.renderDashboard(); } catch (e) { console.warn('Failed to refresh dashboard', e); }
         } catch (error) {
             console.error('Failed to delete task:', error);
         }
@@ -373,16 +415,13 @@ class TaskWise {
         const projectsContainer = document.querySelector('#projects');
         if (!projectsContainer) return;
 
-        // Start with the "Add New Project" button
+        // Start with the "Add New Project" button - with inline onclick handler
         projectsContainer.innerHTML = `
-            <div class="nav-item sub-item" id="addProjectBtn">
+            <div class="nav-item sub-item" id="addProjectBtn" onclick="if(window.taskWise) window.taskWise.showProjectModal()">
                 <i class="fas fa-plus nav-icon"></i>
                 <span>Add New Project</span>
             </div>
         `;
-
-        // Add event listener to the "Add New Project" button
-        document.getElementById('addProjectBtn').addEventListener('click', () => this.showProjectModal());
 
         // Add projects with task counts
         this.projects.forEach(project => {
@@ -932,37 +971,41 @@ class TaskWise {
     }
 
     showProjectModal(project = null) {
+        console.log('🚀 showProjectModal called with project:', project);
+        
         const modal = document.createElement('div');
         modal.className = 'modal-overlay';
-        modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(4px); padding: 20px;';
+        modal.style.cssText = 'position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; background: rgba(0,0,0,0.5) !important; display: flex !important; align-items: center !important; justify-content: center !important; z-index: 10000 !important; backdrop-filter: blur(4px) !important; padding: 20px !important;';
         modal.innerHTML = `
-            <div class="modal" style="background: white; border-radius: 16px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.15); position: relative;">
-                <div class="modal-header" style="padding: 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-                    <h3 style="margin: 0; font-size: 1.5rem; font-weight: 600;">${project ? 'Edit Project' : 'New Project'}</h3>
-                    <button class="modal-close" style="background: none; border: none; font-size: 2rem; cursor: pointer; color: #6b7280; line-height: 1; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: background 0.2s;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">&times;</button>
+            <div class="modal" style="background: white !important; border-radius: 16px !important; width: 90% !important; max-width: 500px !important; max-height: 90vh !important; overflow-y: auto !important; box-shadow: 0 20px 40px rgba(0,0,0,0.15) !important; position: relative !important; display: block !important;">
+                <div class="modal-header" style="padding: 24px !important; border-bottom: 1px solid #e5e7eb !important; display: flex !important; justify-content: space-between !important; align-items: center !important;">
+                    <h3 style="margin: 0 !important; font-size: 1.5rem !important; font-weight: 600 !important;">${project ? 'Edit Project' : 'New Project'}</h3>
+                    <button class="modal-close" style="background: none !important; border: none !important; font-size: 2rem !important; cursor: pointer !important; color: #6b7280 !important; line-height: 1 !important; padding: 0 !important; width: 32px !important; height: 32px !important; display: flex !important; align-items: center !important; justify-content: center !important; border-radius: 8px !important; transition: background 0.2s !important;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">&times;</button>
                 </div>
-                <form class="modal-body" id="projectForm" style="padding: 24px;">
-                    <div class="form-group" style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Project Name *</label>
-                            <input type="text" name="name" required value="${project ? this.escapeHtml(project.name) : ''}" style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem;">
+                <form class="modal-body" id="projectForm" style="padding: 24px !important;">
+                    <div class="form-group" style="margin-bottom: 20px !important;">
+                        <label style="display: block !important; margin-bottom: 8px !important; font-weight: 500 !important; color: #374151 !important;">Project Name *</label>
+                            <input type="text" name="name" required value="${project ? this.escapeHtml(project.name) : ''}" style="width: 100% !important; padding: 10px 12px !important; border: 1px solid #d1d5db !important; border-radius: 8px !important; font-size: 0.95rem !important; box-sizing: border-box !important;">
                     </div>
-                    <div class="form-group" style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Description</label>
-                        <textarea name="description" rows="3" style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; resize: vertical;">${project ? this.escapeHtml(project.description || '') : ''}</textarea>
+                    <div class="form-group" style="margin-bottom: 20px !important;">
+                        <label style="display: block !important; margin-bottom: 8px !important; font-weight: 500 !important; color: #374151 !important;">Description</label>
+                        <textarea name="description" rows="3" style="width: 100% !important; padding: 10px 12px !important; border: 1px solid #d1d5db !important; border-radius: 8px !important; font-size: 0.95rem !important; resize: vertical !important; box-sizing: border-box !important;">${project ? this.escapeHtml(project.description || '') : ''}</textarea>
                     </div>
-                    <div class="form-group" style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Color</label>
-                        <input type="color" name="color" value="${project ? (project.color || '#667eea') : '#667eea'}" style="width: 100%; height: 48px; padding: 4px; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer;">
+                    <div class="form-group" style="margin-bottom: 20px !important;">
+                        <label style="display: block !important; margin-bottom: 8px !important; font-weight: 500 !important; color: #374151 !important;">Color</label>
+                        <input type="color" name="color" value="${project ? (project.color || '#667eea') : '#667eea'}" style="width: 100% !important; height: 48px !important; padding: 4px !important; border: 1px solid #d1d5db !important; border-radius: 8px !important; cursor: pointer !important;">
                     </div>
                 </form>
-                <div class="modal-footer" style="padding: 20px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px; background: #f9fafb;">
-                    <button type="button" class="btn secondary modal-cancel" style="padding: 10px 20px; border-radius: 8px; font-weight: 500; cursor: pointer; background: white; border: 1px solid #d1d5db; color: #374151;">Cancel</button>
-                    <button type="submit" form="projectForm" class="btn primary" style="padding: 10px 20px; border-radius: 8px; font-weight: 500; cursor: pointer; background: #667eea; border: none; color: white;">Create Project</button>
+                <div class="modal-footer" style="padding: 20px 24px !important; border-top: 1px solid #e5e7eb !important; display: flex !important; justify-content: flex-end !important; gap: 12px !important; background: #f9fafb !important;">
+                    <button type="button" class="btn secondary modal-cancel" style="padding: 10px 20px !important; border-radius: 8px !important; font-weight: 500 !important; cursor: pointer !important; background: white !important; border: 1px solid #d1d5db !important; color: #374151 !important;">Cancel</button>
+                    <button type="submit" form="projectForm" class="btn primary" style="padding: 10px 20px !important; border-radius: 8px !important; font-weight: 500 !important; cursor: pointer !important; background: #667eea !important; border: none !important; color: white !important;">Create Project</button>
                 </div>
             </div>
         `;
 
+        console.log('📝 Modal HTML created, appending to body...');
         document.body.appendChild(modal);
+        console.log('✅ Modal appended! Total modals in DOM:', document.querySelectorAll('.modal-overlay').length);
 
         // Event listeners
         modal.querySelector('.modal-close').addEventListener('click', () => this.closeModal(modal));
@@ -1202,9 +1245,20 @@ class TaskWise {
     }
 }
 
-// Initialize TaskWise when DOM is loaded
+// Initialize TaskWise when DOM is loaded - pero check muna if may existing instance na
 document.addEventListener('DOMContentLoaded', () => {
-    window.taskWise = new TaskWise();
+    // Only initialize if not already initialized (prevent double initialization)
+    if (!window.taskWise) {
+        console.log('DOMContentLoaded - Initializing TaskWise...');
+        try {
+            window.taskWise = new TaskWise();
+            console.log('TaskWise initialized successfully!', window.taskWise);
+        } catch (error) {
+            console.error('Failed to initialize TaskWise:', error);
+        }
+    } else {
+        console.log('TaskWise already initialized, skipping...');
+    }
 });
 
 // Additional utility functions
