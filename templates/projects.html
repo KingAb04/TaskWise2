@@ -1,26 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TaskWise - Analytics</title>
+    <title>TaskWise - Projects</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/tasks.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/projects.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <style>
-        .analytics-grid { display: grid; grid-template-columns: 1fr 360px; gap: 20px; max-width: 1100px; margin: 24px auto; }
-        .analytics-card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 6px 18px rgba(16,24,40,0.06); }
-        .analytics-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px }
-        .activity-log { max-height: 520px; overflow: auto; }
-        .activity-row { padding:8px 0; border-bottom:1px solid #f1f5f9; }
-        .kpi-grid { display:flex; gap:12px; }
-        .kpi { flex:1; background:#f8fafc; padding:12px; border-radius:8px; text-align:center }
-    </style>
 </head>
 <body>
     <!-- Sidebar -->
@@ -54,7 +42,7 @@
                 <span>Tasks</span>
             </a>
 
-            <a href="#" class="nav-item">
+            <a href="{{ url_for('projects') }}" class="nav-item active">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path d="M20 14.66V20C20 21.1046 19.1046 22 18 22H4C2.89543 22 2 21.1046 2 20V6C2 4.89543 2.89543 4 4 4H9.34" stroke-width="2" stroke-linecap="round"/>
                     <path d="M18 2L22 6L12 16H8V12L18 2Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -78,7 +66,7 @@
                 <span>Focus</span>
             </a>
 
-            <a href="{{ url_for('analytics') }}" class="nav-item active">
+            <a href="{{ url_for('analytics') }}" class="nav-item">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path d="M18 20V10M12 20V4M6 20v-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
@@ -113,11 +101,28 @@
         <!-- Top Header -->
         <header class="top-header">
             <div class="tabs">
-                <button class="tab active">
+                <button class="tab active" data-tab="all">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path d="M18 20V10M12 20V4M6 20v-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <rect x="3" y="3" width="7" height="7" stroke-width="2"/>
+                        <rect x="14" y="3" width="7" height="7" stroke-width="2"/>
+                        <rect x="14" y="14" width="7" height="7" stroke-width="2"/>
+                        <rect x="3" y="14" width="7" height="7" stroke-width="2"/>
                     </svg>
-                    Analytics
+                    All Projects
+                </button>
+                <button class="tab" data-tab="active">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                        <path d="M12 6V12L16 14" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Active
+                </button>
+                <button class="tab" data-tab="completed">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M9 11L12 14L22 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                    </svg>
+                    Completed
                 </button>
             </div>
 
@@ -127,7 +132,7 @@
                         <circle cx="11" cy="11" r="8" stroke-width="2"/>
                         <path d="M21 21L16.65 16.65" stroke-width="2" stroke-linecap="round"/>
                     </svg>
-                    <input type="text" placeholder="Search analytics...">
+                    <input type="text" placeholder="Search projects...">
                 </div>
                 
                 <!-- Notification Bell -->
@@ -158,52 +163,76 @@
 
         <!-- Content Area -->
         <div class="content-wrapper">
-            <!-- Analytics Page Content -->
-            <h2>Analytics</h2>
-            <p>Productivity insights and activity log</p>
+            <div class="projects-section">
+                <div class="section-header">
+                    <h1>My Projects</h1>
+                    <button class="btn-primary" id="addProjectBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M12 5v14M5 12h14" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        New Project
+                    </button>
+                </div>
+
+                <div class="projects-grid" id="projectsGrid">
+                    <!-- Projects will be dynamically loaded here -->
+                </div>
+            </div>
         </div>
-    </div>
+    </main>
 
-    <div class="content">
-        <div class="analytics-grid">
-            <div>
-                <div class="analytics-card">
-                    <div class="analytics-header">
-                        <h3>Overview</h3>
-                        <small id="summaryDateRange">Last 30 days</small>
-                    </div>
-                    <div class="kpi-grid" style="margin-bottom:12px">
-                        <div class="kpi"><div id="kpiTotal" style="font-weight:700;font-size:1.1rem">0</div><div style="font-size:0.85rem;color:#6b7280">Total tasks</div></div>
-                        <div class="kpi"><div id="kpiTodo" style="font-weight:700;font-size:1.1rem;color:#93c5fd">0</div><div style="font-size:0.85rem;color:#6b7280">To Do</div></div>
-                        <div class="kpi"><div id="kpiInProgress" style="font-weight:700;font-size:1.1rem;color:#fbbf24">0</div><div style="font-size:0.85rem;color:#6b7280">In Progress</div></div>
-                        <div class="kpi"><div id="kpiCompleted" style="font-weight:700;font-size:1.1rem;color:#34d399">0</div><div style="font-size:0.85rem;color:#6b7280">Completed</div></div>
-                        <div class="kpi"><div id="kpiOverdue" style="font-weight:700;font-size:1.1rem;color:#ef4444">0</div><div style="font-size:0.85rem;color:#6b7280">Overdue</div></div>
-                        <div class="kpi"><div id="kpiCompletionRate" style="font-weight:700;font-size:1.1rem">0%</div><div style="font-size:0.85rem;color:#6b7280">Completion rate</div></div>
-                    </div>
-
-                    <canvas id="statusPie" height="160"></canvas>
-                </div>
-
-                <div class="analytics-card" style="margin-top:16px">
-                    <h3 style="margin-bottom:8px">Tasks by Project</h3>
-                    <canvas id="projectBar" height="120"></canvas>
-                </div>
+    <!-- Add Project Modal -->
+    <div class="modal" id="addProjectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Create New Project</h2>
+                <button class="close-btn" id="closeModal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M18 6L6 18M6 6L18 18" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
             </div>
-
-            <div>
-                <div class="analytics-card">
-                    <div class="analytics-header"><h3>Activity Log</h3><small>Recent updates</small></div>
-                    <div class="activity-log" id="activityLog">
-                        <!-- activity rows inserted here -->
+            <form id="addProjectForm">
+                <div class="form-group">
+                    <label for="projectName">Project Name</label>
+                    <input type="text" id="projectName" name="projectName" placeholder="Enter project name" required>
+                </div>
+                <div class="form-group">
+                    <label for="projectDescription">Description (Optional)</label>
+                    <textarea id="projectDescription" name="projectDescription" rows="3" placeholder="Brief description of the project"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="projectColor">Project Color</label>
+                    <div class="color-picker">
+                        <input type="radio" name="projectColor" value="#3b82f6" id="color1" checked>
+                        <label for="color1" class="color-option" style="background: #3b82f6;"></label>
+                        
+                        <input type="radio" name="projectColor" value="#10b981" id="color2">
+                        <label for="color2" class="color-option" style="background: #10b981;"></label>
+                        
+                        <input type="radio" name="projectColor" value="#f59e0b" id="color3">
+                        <label for="color3" class="color-option" style="background: #f59e0b;"></label>
+                        
+                        <input type="radio" name="projectColor" value="#ef4444" id="color4">
+                        <label for="color4" class="color-option" style="background: #ef4444;"></label>
+                        
+                        <input type="radio" name="projectColor" value="#8b5cf6" id="color5">
+                        <label for="color5" class="color-option" style="background: #8b5cf6;"></label>
+                        
+                        <input type="radio" name="projectColor" value="#ec4899" id="color6">
+                        <label for="color6" class="color-option" style="background: #ec4899;"></label>
                     </div>
                 </div>
-            </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="btn-primary" id="submitBtn">Create Project</button>
+                </div>
+            </form>
         </div>
     </div>
 
     <script src="{{ url_for('static', filename='js/darkmode.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/taskwise.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/projects.js') }}"></script>
     <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
 </body>
 </html>

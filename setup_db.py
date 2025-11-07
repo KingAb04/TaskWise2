@@ -35,8 +35,8 @@ def insert_sample_data():
     Note: If DATABASE_URL is set (e.g., SQLite), we temporarily ignore it so that
     the SQLAlchemy engine uses the discrete MySQL env vars instead.
     """
-    # Ensure we don't accidentally use a SQLite DATABASE_URL here
-    os.environ.pop('DATABASE_URL', None)
+    # Don't pop DATABASE_URL - use whatever is configured in .env
+    # os.environ.pop('DATABASE_URL', None)
 
     from config import create_app, db
     # Import all models so metadata knows about them before create_all

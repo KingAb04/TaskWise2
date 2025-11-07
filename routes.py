@@ -184,6 +184,16 @@ def register_routes(app):
         """Serve the Calendar page"""
         return render_template('calendar.html')
 
+    @app.route('/projects')
+    def projects():
+        """Projects page"""
+        return render_template('projects.html')
+    
+    @app.route('/projects/<int:project_id>')
+    def project_detail(project_id):
+        """Project detail page"""
+        return render_template('project-detail.html')
+    
     @app.route('/analytics')
     @login_required
     def analytics():
@@ -618,6 +628,8 @@ def register_routes(app):
             return jsonify({'success': True, 'stats': {'total_tasks': total_tasks, 'completed_tasks': completed_tasks, 'in_progress_tasks': in_progress_tasks, 'overdue_tasks': overdue_tasks, 'completion_rate': round(completion_rate, 1), 'todo_tasks': total_tasks - completed_tasks - in_progress_tasks}})
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)}), 500
+
+    
 
     # Recent tasks for dashboard
     @app.route('/api/tasks/recent', methods=['GET'])

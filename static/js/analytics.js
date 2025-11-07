@@ -16,6 +16,7 @@
             const s = data.stats || {};
             el('kpiTotal').textContent = s.total_tasks || 0;
             el('kpiCompleted').textContent = s.completed_tasks || 0;
+            el('kpiOverdue').textContent = s.overdue_tasks || 0;
             el('kpiCompletionRate').textContent = (s.completion_rate != null) ? (s.completion_rate + '%') : '0%';
         }catch(err){
             console.error('loadStats error', err);
@@ -32,10 +33,37 @@
             if (!data.success) throw new Error(data.error || 'Failed to load tasks');
             const tasks = data.tasks || [];
 
-            // Status distribution
-            const statusCounts = tasks.reduce((acc,t)=>{ const st=(t.status||'todo'); acc[st]=(acc[st]||0)+1; return acc; },{});
+            // Status distribution - count all statuses including overdue
+            const now = new Date();
+            const statusCounts = {todo: 0, in_progress: 0, completed: 0, overdue: 0};
+            
+            tasks.forEach(t => {
+                const st = t.status || 'todo';
+                
+                // Count by status first
+                if (st === 'completed') {
+                    statusCounts.completed++;
+                } else if (st === 'in_progress') {
+                    statusCounts.in_progress++;
+                } else {
+                    statusCounts.todo++;
+                }
+                
+                // Additionally check if task is overdue (has due_date in the past and not completed)
+                if (t.due_date && st !== 'completed') {
+                    const dueDate = new Date(t.due_date);
+                    if (dueDate < now) {
+                        statusCounts.overdue++;
+                    }
+                }
+            });
+            
             const statuses = ['todo','in_progress','completed','overdue'];
             const statusValues = statuses.map(s=>statusCounts[s]||0);
+
+            // Update KPIs with status counts
+            el('kpiTodo').textContent = statusCounts.todo || 0;
+            el('kpiInProgress').textContent = statusCounts.in_progress || 0;
 
             renderStatusPie(statussToLabels(statuses), statusValues);
 
@@ -82,8 +110,51 @@
         if (statusChart) statusChart.destroy();
         statusChart = new Chart(ctx, {
             type: 'pie',
-            data: { labels, datasets: [{ data: values, backgroundColor: ['#93c5fd','#fbbf24','#34d399','#f87171'] }] },
-            options: { responsive:true, plugins:{legend:{position:'bottom'}} }
+            data: { 
+                labels, 
+                datasets: [{ 
+                    data: values, 
+                    backgroundColor: ['#93c5fd','#fbbf24','#34d399','#f87171'] 
+                }] 
+            },
+            options: { 
+                responsive: true, 
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        display: true,
+                        color: '#fff',
+                        font: {
+                            weight: 'bold',
+                            size: 14
+                        },
+                        formatter: function(value, context) {
+                            if (value === 0) return '';
+                            return value;
+                        }
+                    }
+                }
+            },
+            plugins: [ChartDataLabels]
         });
     }
 

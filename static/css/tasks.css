@@ -120,11 +120,22 @@
     font-size: 0.8rem;
     font-weight: 600;
     text-transform: uppercase;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
-    /* nudge the priority badge a little to the right so it doesn't sit too close to the title */
-    margin-left: 12px;
+    white-space: nowrap;
+}
+
+.task-status {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
 }
 
 .priority-high {
@@ -143,6 +154,30 @@
     background: rgba(56, 161, 105, 0.1);
     color: #38A169;
     border: 1px solid rgba(56, 161, 105, 0.2);
+}
+
+.status-todo {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3B82F6;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.status-in_progress {
+    background: rgba(251, 191, 36, 0.1);
+    color: #F59E0B;
+    border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+.status-completed {
+    background: rgba(56, 161, 105, 0.1);
+    color: #38A169;
+    border: 1px solid rgba(56, 161, 105, 0.2);
+}
+
+.status-overdue {
+    background: rgba(229, 62, 62, 0.1);
+    color: #E53E3E;
+    border: 1px solid rgba(229, 62, 62, 0.2);
 }
 
 .task-item {
@@ -171,24 +206,13 @@
     overflow: visible; /* allow content to size naturally */
 }
 
-.status-completed {
-    background: rgba(56, 161, 105, 0.1);
-    color: #38A169;
-    border: 1px solid rgba(56, 161, 105, 0.2);
-}
-
-.status-overdue {
-    background: rgba(229, 62, 62, 0.1);
-    color: #E53E3E;
-    border: 1px solid rgba(229, 62, 62, 0.2);
-}
-
 .task-status i {
     font-size: 0.8rem;
 }
 
-/* small extra spacing for status badge to separate it from the priority badge */
-.task-header .task-status { margin-left: 6px; }
+.task-priority i {
+    font-size: 0.8rem;
+}
 
 /* Search and Filters */
 .task-filters {
