@@ -644,15 +644,11 @@ def register_routes(app):
     def get_notifications():
         try:
             notifs = session.get('notifications')
-            if not notifs:
-                # seed some sample notifications
-                now = datetime.utcnow().isoformat() + 'Z'
-                notifs = [
-                    {'id': 1, 'title': 'Welcome to TaskWise', 'message': 'Thanks for joining TaskWise — get productive!', 'read': False, 'time': now},
-                    {'id': 2, 'title': 'Sample Task Added', 'message': 'We created a sample task to get you started.', 'read': False, 'time': now}
-                ]
+            if notifs is None:
+                # Initialize empty notifications list for new sessions
+                notifs = []
                 session['notifications'] = notifs
-            return jsonify({'success': True, 'notifications': session.get('notifications', [])})
+            return jsonify({'success': True, 'notifications': notifs})
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -668,6 +664,51 @@ def register_routes(app):
                 if n.get('id') == nid:
                     n['read'] = True
             session['notifications'] = notifs
+            return jsonify({'success': True})
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    @app.route('/api/notifications/add', methods=['POST'])
+    def add_notification():
+        try:
+            data = request.get_json() or {}
+            title = data.get('title', 'Notification')
+            message = data.get('message', '')
+            read = data.get('read', False)
+            time = data.get('time', datetime.utcnow().isoformat() + 'Z')
+            
+            notifs = session.get('notifications', [])
+            # Generate new ID
+            new_id = max([n.get('id', 0) for n in notifs], default=0) + 1
+            
+            new_notif = {
+                'id': new_id,
+                'title': title,
+                'message': message,
+                'read': read,
+                'time': time
+            }
+            
+            notifs.insert(0, new_notif)  # Add to beginning
+            session['notifications'] = notifs
+            
+            return jsonify({'success': True, 'notification': new_notif})
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    @app.route('/api/notifications/delete', methods=['POST'])
+    def delete_notification():
+        try:
+            data = request.get_json() or {}
+            nid = data.get('id')
+            if not nid:
+                return jsonify({'success': False, 'error': 'id required'}), 400
+            
+            notifs = session.get('notifications', [])
+            # Remove the notification with matching id
+            notifs = [n for n in notifs if n.get('id') != nid]
+            session['notifications'] = notifs
+            
             return jsonify({'success': True})
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)}), 500

@@ -1047,7 +1047,13 @@ class TaskWise {
 
     // Utility Methods
     async updateTaskStatus(taskId, status) {
+        const task = this.tasks.find(t => t.id === taskId);
         await this.updateTask(taskId, { status });
+        
+        // Show completion notification
+        if (status === 'completed' && task && typeof showCompletionNotification === 'function') {
+            showCompletionNotification(task.title);
+        }
     }
 
     showTaskDetails(taskId) {

@@ -6,6 +6,7 @@
     <title>TaskWise - Analytics</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tasks.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Chart.js CDN -->
@@ -21,69 +22,152 @@
     </style>
 </head>
 <body>
-    <!-- Sidebar Navigation -->
-    <div class="sidebar">
-        <div class="logo">
-            <img src="{{ url_for('static', filename='assets/taskwise-logo-1.png') }}" alt="TaskWise Logo">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 11L12 14L22 4" stroke="#0b63d6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16" stroke="#0b63d6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span class="logo-text">TaskWise</span>
+            </div>
         </div>
-        <div class="divider"></div>
-        
-        <nav class="nav-items">
+
+        <nav class="sidebar-nav">
             <a href="{{ url_for('dashboard') }}" class="nav-item">
-                <i class="fas fa-chart-pie nav-icon"></i>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <rect x="3" y="3" width="7" height="7" stroke-width="2"/>
+                    <rect x="14" y="3" width="7" height="7" stroke-width="2"/>
+                    <rect x="14" y="14" width="7" height="7" stroke-width="2"/>
+                    <rect x="3" y="14" width="7" height="7" stroke-width="2"/>
+                </svg>
                 <span>Dashboard</span>
             </a>
-            <div class="nav-item" onclick="toggleProjects()">
-                <i class="fas fa-folder nav-icon"></i>
-                <span>Projects</span>
-                <i class="fas fa-chevron-down nav-arrow"></i>
-            </div>
-            <div class="collapsible" id="projects">
-                <!-- Projects will be dynamically loaded here by JS -->
-            </div>
+
             <a href="{{ url_for('tasks') }}" class="nav-item">
-                <i class="fas fa-tasks nav-icon"></i>
-                <span>All Tasks</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M9 11L12 14L22 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Tasks</span>
             </a>
-            <a href="{{ url_for('focus') }}" class="nav-item">
-                <i class="fas fa-clock nav-icon"></i>
-                <span>Focus Timer</span>
-            </a>
-            <div class="nav-item active">
-                <i class="fas fa-chart-bar nav-icon"></i>
-                <span>Analytics</span>
-            </div>
+
             <a href="{{ url_for('calendar') }}" class="nav-item">
-                <i class="fas fa-calendar nav-icon"></i>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <rect x="3" y="4" width="18" height="18" rx="2" stroke-width="2"/>
+                    <path d="M16 2V6M8 2V6M3 10H21" stroke-width="2" stroke-linecap="round"/>
+                </svg>
                 <span>Calendar</span>
+            </a>
+
+            <a href="{{ url_for('focus') }}" class="nav-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                    <path d="M12 6v6l4 2" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span>Focus</span>
+            </a>
+
+            <a href="{{ url_for('analytics') }}" class="nav-item active">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M18 20V10M12 20V4M6 20v-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Analytics</span>
             </a>
         </nav>
 
-        <div class="profile">
-            <div class="profile-avatar">
-                <i class="fas fa-user-circle"></i>
-            </div>
-            <div class="profile-info">
-                <h4>{{ current_user.username if current_user else 'Guest' }}</h4>
-                <p>{{ current_user.email if current_user else '' }}</p>
-                <a href="{{ url_for('logout') }}" class="profile-logout">
-                    <i class="fas fa-sign-out-alt"></i> Sign out
+        <div class="sidebar-footer">
+            <button class="theme-toggle" aria-label="Toggle dark mode">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke-width="2"/>
+                </svg>
+            </button>
+
+            <div class="user-profile">
+                <img src="https://ui-avatars.com/api/?name={{ session.get('username', 'User') }}&background=0b63d6&color=fff" alt="User" class="user-avatar">
+                <div class="user-info">
+                    <div class="user-name">{{ session.get('username', 'User') }}</div>
+                    <div class="user-email">{{ session.get('email', 'user@taskwise.com') }}</div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="user-menu" aria-label="User menu">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
                 </a>
             </div>
-            <div class="profile-settings" id="profileSettings">
-                <i class="fas fa-cog"></i>
-            </div>
         </div>
-    </div>
+    </aside>
 
-    <!-- Top Bar -->
-    <div class="topbar">
-        <div class="topbar-left">
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="tabs">
+                <button class="tab active">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M18 20V10M12 20V4M6 20v-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Analytics
+                </button>
+            </div>
+
+            <div class="header-actions">
+                <div class="search-box">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="11" cy="11" r="8" stroke-width="2"/>
+                        <path d="M21 21L16.65 16.65" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <input type="text" placeholder="Search analytics...">
+                </div>
+                
+                <!-- Notification Bell -->
+                <div class="notification-bell">
+                    <button class="icon-btn" aria-label="Notifications">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="notification-badge" id="notificationBadge">0</span>
+                    </button>
+                    <div class="notifications-dropdown" id="notificationsDropdown">
+                        <div class="notifications-header">
+                            <strong>Notifications</strong>
+                            <button class="btn small" id="clearNotifications">Clear</button>
+                        </div>
+                        <div class="notifications-list" id="notificationsList"></div>
+                    </div>
+                </div>
+
+                <button class="icon-btn" aria-label="Settings">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="12" r="3" stroke-width="2"/>
+                        <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="content-wrapper">
+            <!-- Analytics Page Content -->
             <h2>Analytics</h2>
             <p>Productivity insights and activity log</p>
         </div>
         <div class="topbar-right">
             <!-- reserved for controls / filters -->
+            <div class="notification-bell" id="notificationBell">
+                <i class="fas fa-bell"></i>
+                <span class="notification-badge" id="notificationBadge">0</span>
+                <div class="notifications-dropdown" id="notificationsDropdown" aria-hidden="true">
+                    <div class="notifications-header">
+                        <strong>Notifications</strong>
+                        <button id="clearAllBtn" class="btn small">Clear</button>
+                    </div>
+                    <div class="notifications-list" id="notificationsList">
+                        <!-- Items populated by JS -->
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -121,7 +205,9 @@
         </div>
     </div>
 
+    <script src="{{ url_for('static', filename='js/darkmode.js') }}"></script>
     <script src="{{ url_for('static', filename='js/taskwise.js') }}"></script>
     <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
 </body>
 </html>

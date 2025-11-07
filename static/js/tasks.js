@@ -28,6 +28,14 @@ function setupEventListeners() {
     taskSearch.addEventListener('input', filterTasks);
     statusFilter.addEventListener('change', filterTasks);
     priorityFilter.addEventListener('change', filterTasks);
+    
+    // Close modal when clicking outside of modal-content
+    taskModal.addEventListener('click', (e) => {
+        if (e.target === taskModal) {
+            closeTaskModal();
+        }
+    });
+    
     // Subtasks helpers (delegated)
     document.addEventListener('click', (e) => {
         if (e.target && e.target.matches('.subtask-remove')) {
@@ -599,6 +607,12 @@ async function toggleTaskStatus(taskId) {
         });
 
         await loadTasks();
+        
+        // Show completion notification
+        if (newStatus === 'COMPLETED' && typeof showCompletionNotification === 'function') {
+            showCompletionNotification(task.title);
+        }
+        
         showSuccessMessage(`Task marked as ${newStatus.toLowerCase()}`);
     } catch (error) {
         console.error('Error updating task status:', error);
